@@ -44,11 +44,19 @@ class Orchestrator:
         # 2. 任务分发
         result = self._route_task(task_type, user_request)
 
-        # 3. 完成处理（遵循状态转换规则）
-        # GENERATING -> REVIEWING -> DONE
-        if self.state_machine.current_state == TaskState.GENERATING:
-            self.state_machine.transition(TaskState.REVIEWING)
-        if self.state_machine.current_state == TaskState.REVIEWING:
+        # 3. 处理反馈闭环（如果有reviewer和debugger）
+        if "reviewer" in self.agents and "debugger" in self.agents:
+            result = self._handle_feedback_loop(result)
+        else:
+            # 没有反馈闭环时，直接完成
+            # GENERATING -> REVIEWING -> DONE (遵循状态转换规则)
+            if self.state_machine.current_state == TaskState.GENERATING:
+                self.state_machine.transition(TaskState.REVIEWING)
+            if self.state_machine.current_state == TaskState.REVIEWING:
+                self.state_machine.transition(TaskState.DONE)
+
+        # 4. 标记完成（如果尚未完成）
+        if self.state_machine.current_state != TaskState.DONE:
             self.state_machine.transition(TaskState.DONE)
 
         return result
@@ -118,3 +126,52 @@ class Orchestrator:
             agent = self.agents[message.receiver]
             return agent.receive_message(message)
         return None
+
+    def _handle_feedback_loop(self, result: dict, max_iterations: int = 3) -> dict:
+        """处理反馈闭环
+
+        Args:
+            result: 初始结果
+            max_iterations: 最大迭代次数
+
+        Returns:
+            最终结果
+        """
+        iteration = 0
+
+        while iteration < max_iterations:
+            # 审查阶段
+            if self.state_machine.current_state == TaskState.GENERATING:
+                self.state_machine.transition(TaskState.REVIEWING)
+
+            if self.state_machine.current_state == TaskState.REVIEWING:
+                review_result = self.agents["reviewer"].process(
+                    {"code": result.get("code", "")},
+                    self.context.data,
+                )
+
+                if review_result.get("passed", True):
+                    # 审查通过，完成
+                    self.state_machine.transition(TaskState.DONE)
+                    return result
+                else:
+                    # 审查不通过，进入修复
+                    self.state_machine.transition(TaskState.FIXING)
+                    result["issues"] = review_result.get("issues", [])
+                    result["review_score"] = review_result.get("score", 0)
+
+            # 修复阶段
+            if self.state_machine.current_state == TaskState.FIXING:
+                fix_result = self.agents["debugger"].process(
+                    {
+                        "code": result.get("code", ""),
+                        "issues": result.get("issues", []),
+                    },
+                    self.context.data,
+                )
+                result["code"] = fix_result.get("fixed_code", result.get("code", ""))
+                self.state_machine.transition(TaskState.REVIEWING)
+                iteration += 1
+
+        # 达到最大迭代次数
+        return result

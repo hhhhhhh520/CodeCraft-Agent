@@ -58,3 +58,36 @@ class TestOrchestrator:
         # 处理请求后状态变化
         orch.process_request("test")
         assert orch.state_machine.current_state == TaskState.DONE
+
+    def test_feedback_loop(self):
+        """测试反馈闭环"""
+        generator = Mock()
+        generator.name = "generator"
+        generator.process.return_value = {"code": "def test(): pass"}
+
+        reviewer = Mock()
+        reviewer.name = "reviewer"
+        # 第一次审查不通过，第二次通过
+        reviewer.process.side_effect = [
+            {"passed": False, "issues": [{"severity": "high", "message": "test"}], "score": 60},
+            {"passed": True, "issues": [], "score": 90},
+        ]
+
+        debugger = Mock()
+        debugger.name = "debugger"
+        debugger.process.return_value = {"fixed_code": "def test():\n    return 1"}
+
+        agents = {
+            "generator": generator,
+            "reviewer": reviewer,
+            "debugger": debugger,
+        }
+        ctx = SharedContext()
+        orch = Orchestrator(agents=agents, context=ctx)
+
+        result = orch.process_request("实现一个测试函数")
+
+        # 验证审查被调用了两次
+        assert reviewer.process.call_count == 2
+        # 验证调试器被调用了一次
+        assert debugger.process.call_count == 1
