@@ -1,6 +1,6 @@
 # CodeCraft Agent 项目进度
 
-> 最后更新: 2026-04-08
+> 最后更新: 2026-04-09
 
 ---
 
@@ -50,15 +50,17 @@
 
 ---
 
-### Phase 3: 工具能力 ⏳ 待开始
+### Phase 3: 工具能力 ✅ 已完成
 
 | 任务 | 状态 | 提交 | 完成时间 |
 |------|------|------|----------|
-| Task 15: AST解析器 | ⏳ | - | - |
-| Task 16: 代码执行器 | ⏳ | - | - |
-| Task 17: 测试生成Agent | ⏳ | - | - |
+| Task 15: AST解析器 | ✅ | - | 2026-04-09 |
+| Task 16: 代码执行器 | ✅ | - | 2026-04-09 |
+| Task 17: 测试生成Agent | ✅ | efc0cfb | 2026-04-09 |
 
-**里程碑**: 完整的工具链支持
+**里程碑**: ✅ 完整的工具链支持
+
+**测试结果**: 58个测试通过，代码覆盖率 84%
 
 ---
 
@@ -93,8 +95,12 @@ codecraft-agent/
 │   │   ├── __init__.py         ✅
 │   │   ├── code_generator.py   ✅ 代码生成Agent
 │   │   ├── code_reviewer.py    ✅ 代码审查Agent
-│   │   └── debugger.py         ✅ 调试Agent
-│   ├── tools/                  ⏳ 待实现
+│   │   ├── debugger.py         ✅ 调试Agent
+│   │   └── test_generator.py   ✅ 测试生成Agent
+│   ├── tools/                  ✅
+│   │   ├── __init__.py         ✅
+│   │   ├── ast_parser.py       ✅ AST解析器
+│   │   └── executor.py         ✅ 代码执行器
 │   └── llm/
 │       ├── __init__.py         ✅
 │       ├── base.py             ✅ LLM抽象基类
@@ -114,6 +120,9 @@ codecraft-agent/
     ├── test_debugger.py        ✅
     ├── test_memory.py          ✅
     ├── test_orchestrator.py    ✅
+    ├── test_ast_parser.py      ✅
+    ├── test_executor.py        ✅
+    ├── test_test_generator.py  ✅
     └── test_integration.py     ✅
 ```
 
