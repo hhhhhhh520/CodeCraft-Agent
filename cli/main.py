@@ -1,5 +1,13 @@
 """CLI主入口模块"""
 
+import os
+import sys
+
+# 修复 Windows 控制台编码问题
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 import typer
 from rich.console import Console
 from rich.markdown import Markdown
