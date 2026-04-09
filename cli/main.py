@@ -32,13 +32,23 @@ def get_orchestrator() -> Orchestrator:
     # 创建LLM
     llm = LLMFactory.create("openai", "gpt-4o-mini", api_key=api_key)
 
-    # 创建Agent
-    from backend.agents import CodeGeneratorAgent
+    # 创建所有Agent
+    from backend.agents import (
+        CodeGeneratorAgent,
+        CodeReviewerAgent,
+        DebuggerAgent,
+    )
 
     generator = CodeGeneratorAgent(llm=llm, tools=[])
+    reviewer = CodeReviewerAgent(llm=llm, tools=[])
+    debugger = DebuggerAgent(llm=llm, tools=[])
 
-    # 创建Orchestrator
-    agents = {"generator": generator}
+    # 创建Orchestrator（完整多Agent协作）
+    agents = {
+        "generator": generator,
+        "reviewer": reviewer,
+        "debugger": debugger,
+    }
     context = SharedContext()
 
     return Orchestrator(agents=agents, context=context)
@@ -57,6 +67,14 @@ def generate(requirement: str) -> None:
     result = orchestrator.process_request(requirement)
 
     if "code" in result:
+        # 显示审查结果
+        if "review_score" in result:
+            score = result["review_score"]
+            if score >= 90:
+                console.print(f"\n[bold green]✓ 代码审查通过[/bold green] (评分: {score})")
+            else:
+                console.print(f"\n[bold yellow]⚠ 代码已自动修复优化[/bold yellow] (评分: {score} → 优化后)")
+
         console.print("\n[bold green]生成的代码:[/bold green]\n")
         console.print(Markdown(f"```python\n{result['code']}\n```"))
     else:
@@ -67,6 +85,7 @@ def generate(requirement: str) -> None:
 def chat() -> None:
     """交互模式"""
     console.print(Panel("[bold green]CodeCraft Agent 交互模式[/bold green]"))
+    console.print("多Agent协作: 生成 → 审查 → 修复优化")
     console.print("输入需求生成代码，输入 'exit' 退出\n")
 
     orchestrator = get_orchestrator()
@@ -81,6 +100,14 @@ def chat() -> None:
             result = orchestrator.process_request(user_input)
 
             if "code" in result:
+                # 显示审查结果
+                if "review_score" in result:
+                    score = result["review_score"]
+                    if score >= 90:
+                        console.print(f"\n[bold green]✓ 代码审查通过[/bold green] (评分: {score})")
+                    else:
+                        console.print(f"\n[bold yellow]⚠ 代码已自动修复优化[/bold yellow]")
+
                 console.print("\n[bold green]CodeCraft:[/bold green]\n")
                 console.print(Markdown(f"```python\n{result['code']}\n```"))
             else:
