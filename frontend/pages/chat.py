@@ -98,15 +98,8 @@ if generate_btn and requirement:
     # 执行生成
     with st.spinner("正在生成代码..."):
         try:
-            # 更新状态
-            SessionManager.set_agent_state(AgentState.ANALYZING)
-            st.rerun()
-
             # 调用后端
             result = orchestrator.process_request(requirement)
-
-            # 更新状态为完成
-            SessionManager.set_agent_state(AgentState.DONE)
 
             # 保存结果
             generation_result = GenerationResult(
@@ -117,11 +110,10 @@ if generate_btn and requirement:
                 agent_state=AgentState.DONE,
             )
             SessionManager.set_generation_result(generation_result)
+            SessionManager.set_agent_state(AgentState.DONE)
 
             # 添加到历史
             SessionManager.add_to_history(generation_result)
-
-            st.rerun()
 
         except Exception as e:
             SessionManager.set_agent_state(AgentState.IDLE)
