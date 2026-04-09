@@ -73,20 +73,27 @@ def get_orchestrator() -> Orchestrator:
 
 
 @app.command()
-def generate(requirement: str) -> None:
+def generate(requirement: str, fast: bool = False) -> None:
     """生成代码
 
     Args:
         requirement: 代码需求描述
+        fast: 快速模式，跳过代码审查
     """
     console.print(Panel(f"[bold blue]正在生成代码...[/bold blue]\n{requirement}"))
 
     orchestrator = get_orchestrator()
+
+    # 快速模式：移除 reviewer 和 debugger
+    if fast:
+        orchestrator.agents = {"generator": orchestrator.agents["generator"]}
+        console.print("[dim]快速模式：跳过代码审查[/dim]")
+
     result = orchestrator.process_request(requirement)
 
     if "code" in result:
         # 显示审查结果
-        if "review_score" in result:
+        if not fast and "review_score" in result:
             score = result["review_score"]
             if score >= 90:
                 console.print(f"\n[bold green]✓ 代码审查通过[/bold green] (评分: {score})")
@@ -100,13 +107,24 @@ def generate(requirement: str) -> None:
 
 
 @app.command()
-def chat() -> None:
-    """交互模式"""
+def chat(fast: bool = False) -> None:
+    """交互模式
+
+    Args:
+        fast: 快速模式，跳过代码审查
+    """
     console.print(Panel("[bold green]CodeCraft Agent 交互模式[/bold green]"))
-    console.print("多Agent协作: 生成 → 审查 → 修复优化")
+    if fast:
+        console.print("[dim]快速模式：跳过代码审查[/dim]")
+    else:
+        console.print("多Agent协作: 生成 → 审查 → 修复优化")
     console.print("输入需求生成代码，输入 'exit' 退出\n")
 
     orchestrator = get_orchestrator()
+
+    # 快速模式：移除 reviewer 和 debugger
+    if fast:
+        orchestrator.agents = {"generator": orchestrator.agents["generator"]}
 
     while True:
         try:
@@ -119,7 +137,7 @@ def chat() -> None:
 
             if "code" in result:
                 # 显示审查结果
-                if "review_score" in result:
+                if not fast and "review_score" in result:
                     score = result["review_score"]
                     if score >= 90:
                         console.print(f"\n[bold green]✓ 代码审查通过[/bold green] (评分: {score})")
