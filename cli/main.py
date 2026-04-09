@@ -23,14 +23,24 @@ def get_orchestrator() -> Orchestrator:
     """
     import os
 
-    # 从环境变量获取API key
-    api_key = os.getenv("OPENAI_API_KEY")
+    # 支持 DeepSeek 或 OpenAI
+    api_key = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY")
     if not api_key:
-        console.print("[red]Error: OPENAI_API_KEY environment variable not set[/red]")
+        console.print("[red]Error: 请设置 DEEPSEEK_API_KEY 或 OPENAI_API_KEY 环境变量[/red]")
         raise typer.Exit(1)
 
+    # 判断使用哪个API
+    if os.getenv("DEEPSEEK_API_KEY"):
+        base_url = "https://api.deepseek.com/v1"
+        model = "deepseek-chat"
+        console.print("[dim]使用 DeepSeek API[/dim]")
+    else:
+        base_url = None
+        model = "gpt-4o-mini"
+        console.print("[dim]使用 OpenAI API[/dim]")
+
     # 创建LLM
-    llm = LLMFactory.create("openai", "gpt-4o-mini", api_key=api_key)
+    llm = LLMFactory.create("openai", model, api_key=api_key, base_url=base_url)
 
     # 创建所有Agent
     from backend.agents import (
