@@ -78,3 +78,7 @@ chroma/
 
 # Claude Code
 .claude/
+
+# Progress and Guide files
+OPTIMIZATION_PROGRESS.md
+INTERVIEW_GUIDE.md
