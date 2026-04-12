@@ -35,7 +35,7 @@ with st.sidebar:
         ConfigManager.save(st.session_state.config)
 
     st.markdown("---")
-    st.caption("CodeCraft Agent v0.1.0")
+    st.caption("CodeCraft Agent v0.2.0")
     st.caption("多Agent协作代码生成助手")
 
 # 主页内容

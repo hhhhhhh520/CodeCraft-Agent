@@ -43,10 +43,12 @@ col1, col2, col3 = st.columns([1, 1, 3])
 with col1:
     generate_btn = st.button("🚀 生成代码", type="primary", use_container_width=True)
 
-# Agent状态展示
+# Agent状态展示（动态更新）
 st.markdown("---")
 st.markdown("### Agent 协作状态")
-render_agent_status(st.session_state.agent_state)
+status_placeholder = st.empty()
+with status_placeholder.container():
+    render_agent_status(st.session_state.agent_state)
 
 # 处理生成请求
 if generate_btn and requirement:
@@ -95,29 +97,93 @@ if generate_btn and requirement:
     context = SharedContext()
     orchestrator = Orchestrator(agents=agents, context=context)
 
-    # 执行生成
-    with st.spinner("正在生成代码..."):
-        try:
-            # 调用后端
-            result = orchestrator.process_request(requirement)
+    # Agent列表
+    all_agents = ["Generator", "Reviewer", "Debugger"]
+    completed_agents = []
 
-            # 保存结果
-            generation_result = GenerationResult(
-                requirement=requirement,
-                code=result.get("code", ""),
-                review_score=result.get("review_score", 100),
-                issues=result.get("issues", []),
-                agent_state=AgentState.DONE,
-            )
-            SessionManager.set_generation_result(generation_result)
-            SessionManager.set_agent_state(AgentState.DONE)
+    try:
+        # Step 1: 代码生成
+        SessionManager.set_agent_state(AgentState.GENERATING)
+        with status_placeholder.container():
+            render_agent_status(AgentState.GENERATING)
 
-            # 添加到历史
-            SessionManager.add_to_history(generation_result)
+        # 使用流式生成
+        from backend.agents.code_generator import CodeGeneratorAgent
 
-        except Exception as e:
-            SessionManager.set_agent_state(AgentState.IDLE)
-            st.error(f"❌ 生成失败: {e}")
+        generator = agents["generator"]
+        messages = [
+            {"role": "system", "content": generator.SYSTEM_PROMPT},
+            {"role": "user", "content": f"请实现：{requirement}"},
+        ]
+
+        # 流式显示代码
+        code_placeholder = st.empty()
+        full_code = ""
+
+        for chunk in llm.stream(messages):
+            full_code += chunk
+            code_placeholder.code(full_code, language="python")
+
+        # 提取代码块
+        import re
+        pattern = r"```python\s*\n(.*?)\n```"
+        matches = re.findall(pattern, full_code, re.DOTALL)
+        code = matches[0] if matches else full_code
+
+        completed_agents.append("Generator")
+
+        # Step 2: 代码审查（如果未启用快速模式）
+        issues = []
+        review_score = 100
+
+        if not config.get("fast_mode", False) and "reviewer" in agents:
+            # 更新状态为审查中
+            SessionManager.set_agent_state(AgentState.REVIEWING)
+            with status_placeholder.container():
+                render_agent_status(AgentState.REVIEWING)
+
+            reviewer = agents["reviewer"]
+            review_result = reviewer.process({"code": code}, context.data)
+            issues = review_result.get("issues", [])
+            review_score = review_result.get("score", 100)
+
+            completed_agents.append("Reviewer")
+
+            # Step 3: 修复问题（如果有）
+            if not review_result.get("passed", True) and "debugger" in agents:
+                # 更新状态为修复中
+                SessionManager.set_agent_state(AgentState.FIXING)
+                with status_placeholder.container():
+                    render_agent_status(AgentState.FIXING)
+
+                debugger = agents["debugger"]
+                fix_result = debugger.process({"code": code, "issues": issues}, context.data)
+                code = fix_result.get("fixed_code", code)
+
+                completed_agents.append("Debugger")
+
+        # 完成
+        SessionManager.set_agent_state(AgentState.DONE)
+        with status_placeholder.container():
+            render_agent_status(AgentState.DONE)
+
+        st.success("✅ 代码生成完成！")
+
+        # 保存结果
+        generation_result = GenerationResult(
+            requirement=requirement,
+            code=code,
+            review_score=review_score,
+            issues=issues,
+            agent_state=AgentState.DONE,
+        )
+        SessionManager.set_generation_result(generation_result)
+        SessionManager.set_agent_state(AgentState.DONE)
+        SessionManager.add_to_history(generation_result)
+
+    except Exception as e:
+        SessionManager.set_agent_state(AgentState.IDLE)
+        st.error(f"❌ 生成失败: {e}")
 
 # 显示生成结果
 st.markdown("---")

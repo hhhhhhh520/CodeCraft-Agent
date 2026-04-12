@@ -1,0 +1,4 @@
+# Streamlit Cloud packages
+# 指定需要安装的系统依赖
+
+chroma-hnswlib

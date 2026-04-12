@@ -1,6 +1,26 @@
 # CodeCraft Agent
 
-基于多Agent协作的Python代码生成与优化助手。
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![Tests](https://img.shields.io/badge/Tests-67%20passed-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-81%25-green)
+![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-orange)
+
+> 多Agent协作的Python代码生成与优化助手
+
+基于多Agent协作的Python代码生成与优化助手，实现代码生成 → 审查 → 修复 → 测试的完整闭环。
+
+📚 **文档**: [项目亮点](HIGHLIGHTS.md) | [面试指南](INTERVIEW_GUIDE.md) | [详细架构](docs/assets/architecture.md)
+
+## 项目亮点
+
+| 特性 | 描述 |
+|------|------|
+| 🤖 多Agent协作 | Generator → Reviewer → Debugger → TestGenerator |
+| 🔄 反馈闭环 | 审查不通过自动修复，最多3次迭代 |
+| 📊 状态机管理 | 8状态有限状态机，确保任务流转可控 |
+| 🔌 多模型支持 | OpenAI / Claude / DeepSeek 可切换 |
+| 🧠 向量记忆 | ChromaDB语义检索历史代码 |
+| ✅ 高测试覆盖 | 67个测试用例，81%覆盖率 |
 
 ## 功能特性
 
@@ -126,16 +146,87 @@ python -m cli.main version
 
 ## 架构设计
 
+### 系统架构图
+
+```mermaid
+graph TB
+    subgraph 用户交互层
+        CLI[CLI - Typer/Rich]
+        WEB[Web - Streamlit]
+    end
+
+    subgraph 协调层
+        ORC[Orchestrator<br/>多Agent协调器]
+        SM[StateMachine<br/>状态机]
+        CTX[SharedContext<br/>共享上下文]
+    end
+
+    subgraph Agent层
+        GEN[Generator<br/>代码生成]
+        REV[Reviewer<br/>代码审查]
+        DBG[Debugger<br/>问题修复]
+        TST[TestGenerator<br/>测试生成]
+    end
+
+    subgraph 工具层
+        AST[AST Parser<br/>语法解析]
+        EXE[Executor<br/>代码执行]
+    end
+
+    subgraph 基础设施层
+        LLM[LLM Adapter<br/>OpenAI/Claude/DeepSeek]
+        MEM[Memory<br/>记忆系统]
+        TOK[Token Manager<br/>Token管理]
+    end
+
+    CLI --> ORC
+    WEB --> ORC
+    ORC --> SM
+    ORC --> CTX
+    SM --> GEN
+    SM --> REV
+    SM --> DBG
+    SM --> TST
+    GEN --> AST
+    DBG --> EXE
+    GEN --> LLM
+    REV --> LLM
+    DBG --> LLM
+    LLM --> TOK
+    CTX --> MEM
 ```
-用户交互层 (CLI/Streamlit Web)
-        ↓
-Orchestrator 协调器 (状态机 + 消息路由)
-        ↓
-Agent层: Generator → Reviewer → Debugger → TestGenerator
-        ↓
-工具层: AST Parser + Code Executor
-        ↓
-LLM抽象层: OpenAI / Claude / DeepSeek
+
+### Agent协作流程
+
+```mermaid
+flowchart LR
+    REQ[用户需求] --> GEN[Generator<br/>代码生成]
+    GEN --> REV{Reviewer<br/>代码审查}
+    REV -->|通过| TST[TestGenerator<br/>生成测试]
+    REV -->|不通过| DBG[Debugger<br/>问题修复]
+    DBG --> REV
+    TST --> DONE[完成输出]
+```
+
+### 状态机转换
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> ANALYZING
+    ANALYZING --> GENERATING
+    ANALYZING --> REVIEWING
+    GENERATING --> REVIEWING
+    GENERATING --> FAILED
+    REVIEWING --> TESTING
+    REVIEWING --> FIXING
+    REVIEWING --> DONE
+    FIXING --> REVIEWING
+    FIXING --> GENERATING
+    TESTING --> DONE
+    TESTING --> FIXING
+    FAILED --> PENDING
+    DONE --> [*]
 ```
 
 ### 核心特性
@@ -143,6 +234,8 @@ LLM抽象层: OpenAI / Claude / DeepSeek
 - **ReAct推理模式** - 观察-思考-行动循环决策
 - **状态机管理** - PENDING → ANALYZING → GENERATING → REVIEWING → FIXING → TESTING → DONE
 - **反馈闭环** - 审查不通过自动修复，修复后重新审查
+
+> 📄 详细架构图请查看 [docs/assets/architecture.md](docs/assets/architecture.md)
 
 ## 开发
 

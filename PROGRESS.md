@@ -1,6 +1,6 @@
 # CodeCraft Agent 项目进度
 
-> 最后更新: 2026-04-09
+> 最后更新: 2026-04-12
 
 ---
 
@@ -75,6 +75,37 @@
 **里程碑**: ✅ 生产级功能完善
 
 **测试结果**: 67个测试通过，代码覆盖率 81%
+
+---
+
+### Phase 5: 简历展示完善 🔄 进行中
+
+| 任务 | 状态 | 完成时间 |
+|------|------|----------|
+| Task 21: 架构图可视化 | ✅ | 2026-04-12 |
+| Task 22: Demo演示脚本 | ✅ | 2026-04-12 |
+| Task 23: 流式输出 | ✅ | 2026-04-12 |
+| Task 24: 记忆系统增强(ChromaDB) | ✅ | 2026-04-12 |
+| Task 25: 在线Demo部署 | ✅ | 2026-04-12 |
+| Task 26: 项目亮点文档 | ✅ | 2026-04-12 |
+
+**里程碑**: ✅ 简历展示完善全部完成！
+
+**已完成产出**:
+- `README.md` - 添加徽章、项目亮点表格、3个Mermaid架构图、文档链接
+- `docs/assets/architecture.md` - 5个详细架构图文档
+- `HIGHLIGHTS.md` - 技术亮点文档
+- `INTERVIEW_GUIDE.md` - 面试话术文档
+- `demos/` - 4个演示脚本 + 运行脚本 + 演示指南
+- `frontend/components/streaming_display.py` - 流式显示组件
+- `frontend/pages/chat.py` - 集成流式输出
+- `backend/core/vector_memory.py` - 向量记忆系统
+- `backend/core/memory.py` - 集成向量记忆
+- `tests/test_vector_memory.py` - 向量记忆测试
+- `.streamlit/config.toml` - Streamlit配置
+- `.streamlit/secrets.toml.example` - Secrets示例
+- `packages.txt` - 系统依赖
+- `.gitignore` - 更新敏感文件
 
 ---
 

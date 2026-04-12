@@ -1,4 +1,5 @@
 @echo off
-chcp 65001 >nul
+cd %~dp0
 echo Starting CodeCraft Agent Web UI...
-streamlit run frontend/app.py --server.port 8501
+python -m streamlit run frontend/app.py --server.port 8501
+pause

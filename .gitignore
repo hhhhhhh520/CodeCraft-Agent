@@ -68,3 +68,13 @@ Thumbs.db
 # Project specific
 .codecraft/
 history.json
+
+# Streamlit
+.streamlit/secrets.toml
+
+# ChromaDB memory
+memory/
+chroma/
+
+# Claude Code
+.claude/

@@ -12,9 +12,29 @@ st.set_page_config(
 # 初始化会话状态
 SessionManager.init_session()
 
+# 尝试从Streamlit secrets读取配置
+def get_secrets_config():
+    """从Streamlit Cloud secrets读取配置"""
+    try:
+        if hasattr(st, 'secrets'):
+            return {
+                "api_key": st.secrets.get("DEEPSEEK_API_KEY", ""),
+                "api_type": st.secrets.get("DEFAULT_API_TYPE", "deepseek"),
+            }
+    except Exception:
+        pass
+    return None
+
 # 页面标题
 st.title("⚙️ 设置")
 st.markdown("配置你的 API 和偏好设置")
+
+# 检查secrets配置
+secrets_config = get_secrets_config()
+if secrets_config and secrets_config.get("api_key"):
+    st.info("🔐 检测到云端配置，API Key 已通过 Secrets 配置")
+    if not st.session_state.config.get("api_key"):
+        st.session_state.config.update(secrets_config)
 
 # API 配置
 st.markdown("### API 配置")
