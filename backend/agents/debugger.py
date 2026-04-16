@@ -4,6 +4,7 @@ import re
 from typing import Any, Optional
 
 from backend.core.agent import BaseAgent
+from backend.tools.executor import CodeValidator
 
 
 class DebuggerAgent(BaseAgent):
@@ -24,15 +25,17 @@ class DebuggerAgent(BaseAgent):
 
 直接输出修复后的代码，使用```python代码块包裹。"""
 
-    def __init__(self, llm: Any, tools: list[Any], memory: Optional[Any] = None) -> None:
+    def __init__(self, llm: Any, tools: list[Any], memory: Optional[Any] = None, strict_security: bool = True) -> None:
         """初始化调试Agent
 
         Args:
             llm: LLM实例
             tools: 工具列表
             memory: 记忆系统实例
+            strict_security: 是否启用严格安全验证
         """
         super().__init__(name="debugger", llm=llm, tools=tools, memory=memory)
+        self.strict_security = strict_security
 
     def process(self, input_data: dict, context: dict) -> dict:
         """处理调试请求
@@ -74,10 +77,26 @@ class DebuggerAgent(BaseAgent):
         response = self.llm.invoke(messages)
         fixed_code = self._extract_code(response)
 
+        # 安全验证
+        security_issues = []
+        if fixed_code:
+            is_safe, sec_issues = CodeValidator.validate(fixed_code, strict=self.strict_security)
+            if not is_safe:
+                security_issues = sec_issues
+                if self.strict_security:
+                    return {
+                        "fixed_code": code,  # 返回原始代码
+                        "original_code": code,
+                        "issues_fixed": 0,
+                        "security_error": "修复后的代码未通过安全验证",
+                        "security_issues": sec_issues,
+                    }
+
         return {
             "fixed_code": fixed_code,
             "original_code": code,
             "issues_fixed": len(issues),
+            "security_issues": security_issues,
         }
 
     def _extract_code(self, response: str) -> str:

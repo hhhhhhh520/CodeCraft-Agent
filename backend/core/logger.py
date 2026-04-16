@@ -10,11 +10,32 @@ from typing import Optional
 
 # 敏感信息脱敏模式
 SENSITIVE_PATTERNS = [
-    (r"(api[_-]?key\s*[=:]\s*['\"]?)[^'\"\s]+(['\"]?)", r"\1***REDACTED***\2"),
-    (r"(token\s*[=:]\s*['\"]?)[^'\"\s]+(['\"]?)", r"\1***REDACTED***\2"),
-    (r"(password\s*[=:]\s*['\"]?)[^'\"\s]+(['\"]?)", r"\1***REDACTED***\2"),
-    (r"(secret\s*[=:]\s*['\"]?)[^'\"\s]+(['\"]?)", r"\1***REDACTED***\2"),
+    # API Key patterns (多种格式)
+    (r"(api[_-]?key\s*[=:]\s*['\"]?)[^'\"\s,]+(['\"]?)", r"\1***REDACTED***\2"),
+    (r"(\"api[_-]?key\"\s*:\s*\")[^\"]+(\")", r"\1***REDACTED***\2"),
+    (r"('api[_-]?key'\s*:\s*')[^']+(')", r"\1***REDACTED***\2"),
+    # Token patterns
+    (r"(token\s*[=:]\s*['\"]?)[^'\"\s,]+(['\"]?)", r"\1***REDACTED***\2"),
+    (r"(bearer\s+)[a-zA-Z0-9_-]+", r"\1***REDACTED***"),
+    (r"(\"token\"\s*:\s*\")[^\"]+(\")", r"\1***REDACTED***\2"),
+    # Password patterns
+    (r"(password\s*[=:]\s*['\"]?)[^'\"\s,]+(['\"]?)", r"\1***REDACTED***\2"),
+    (r"(passwd\s*[=:]\s*['\"]?)[^'\"\s,]+(['\"]?)", r"\1***REDACTED***\2"),
+    # Secret patterns
+    (r"(secret\s*[=:]\s*['\"]?)[^'\"\s,]+(['\"]?)", r"\1***REDACTED***\2"),
+    (r"(secret_key\s*[=:]\s*['\"]?)[^'\"\s,]+(['\"]?)", r"\1***REDACTED***\2"),
+    # OpenAI API Key format (sk-...)
     (r"(sk-[a-zA-Z0-9]{20,})", r"sk-***REDACTED***"),
+    # DeepSeek API Key format (sk-...)
+    (r"(sk-[a-f0-9]{32,})", r"sk-***REDACTED***"),
+    # Anthropic API Key format
+    (r"(sk-ant-[a-zA-Z0-9-]+)", r"sk-ant-***REDACTED***"),
+    # JWT tokens
+    (r"(eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*)", r"***JWT_REDACTED***"),
+    # AWS Access Key
+    (r"(AKIA[A-Z0-9]{16})", r"***AWS_KEY_REDACTED***"),
+    # Generic key=value patterns
+    (r"(key\s*[=:]\s*['\"]?)[^'\"\s,]{8,}(['\"]?)", r"\1***REDACTED***\2"),
 ]
 
 

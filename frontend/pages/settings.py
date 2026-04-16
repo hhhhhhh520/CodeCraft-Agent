@@ -50,6 +50,7 @@ api_key = st.text_input(
     value=st.session_state.config.get("api_key", ""),
     type="password",
     placeholder="输入你的 API Key",
+    max_chars=200,  # 限制最大字符数
 )
 
 # 模型选择
@@ -78,8 +79,19 @@ st.markdown("---")
 col1, col2, col3 = st.columns([1, 1, 2])
 with col1:
     if st.button("💾 保存配置", type="primary"):
+        # 输入验证
+        if api_key:
+            from backend.utils.input_validator import validate_api_key
+            is_valid, cleaned_key, error_msg = validate_api_key(api_key)
+            if not is_valid:
+                st.error(f"❌ API Key验证失败: {error_msg}")
+                st.stop()
+            api_key_to_save = cleaned_key
+        else:
+            api_key_to_save = ""
+
         st.session_state.config = {
-            "api_key": api_key,
+            "api_key": api_key_to_save,
             "api_type": api_type,
             "model": model,
             "fast_mode": fast_mode,

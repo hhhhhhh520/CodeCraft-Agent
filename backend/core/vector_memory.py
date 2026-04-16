@@ -1,10 +1,17 @@
 """向量记忆系统模块
 
 基于ChromaDB的向量记忆系统，支持语义检索历史代码。
+
+安全注意事项：
+- 向量数据库存储在本地文件系统
+- 包含用户需求描述和生成的代码
+- 建议在生产环境中使用加密存储或限制访问权限
 """
 
 import os
+import stat
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional
 
 try:
@@ -15,11 +22,32 @@ except ImportError:
     CHROMADB_AVAILABLE = False
 
 
+def _set_secure_permissions(path: str) -> None:
+    """设置安全目录权限（仅所有者可访问）
+
+    Args:
+        path: 目录路径
+    """
+    if os.name == 'posix':
+        os.chmod(path, stat.S_IRWXU)  # 700: 仅所有者读写执行
+
+
 class VectorMemory:
     """基于ChromaDB的向量记忆系统
 
     提供代码片段的向量化存储和语义检索功能。
+
+    安全说明：
+    - 数据以明文存储在本地文件系统
+    - 目录权限设置为仅所有者可访问（POSIX系统）
+    - 不应存储敏感信息（如API Key、密码等）
     """
+
+    # 敏感信息关键词（不应存储）
+    SENSITIVE_KEYWORDS = [
+        "api_key", "apikey", "password", "secret", "token",
+        "credential", "private_key", "access_key",
+    ]
 
     def __init__(
         self,
@@ -37,11 +65,13 @@ class VectorMemory:
                 "ChromaDB未安装，请运行: pip install chromadb"
             )
 
-        # 确保目录存在
-        os.makedirs(persist_dir, exist_ok=True)
+        # 确保目录存在并设置安全权限
+        Path(persist_dir).mkdir(parents=True, exist_ok=True)
+        _set_secure_permissions(persist_dir)
 
         # 初始化ChromaDB客户端
         self.client = chromadb.PersistentClient(path=persist_dir)
+        self.persist_dir = persist_dir
 
         # 获取或创建集合
         self.collection = self.client.get_or_create_collection(
@@ -50,6 +80,21 @@ class VectorMemory:
         )
 
         self._doc_counter = 0
+
+    def _check_sensitive_content(self, text: str) -> bool:
+        """检查文本是否包含敏感信息
+
+        Args:
+            text: 要检查的文本
+
+        Returns:
+            是否包含敏感信息
+        """
+        text_lower = text.lower()
+        for keyword in self.SENSITIVE_KEYWORDS:
+            if keyword in text_lower:
+                return True
+        return False
 
     def add(
         self,
@@ -66,7 +111,16 @@ class VectorMemory:
 
         Returns:
             文档ID
+
+        Raises:
+            ValueError: 如果内容包含敏感信息
         """
+        # 安全检查：不应存储敏感信息
+        if self._check_sensitive_content(requirement):
+            raise ValueError("需求描述包含敏感信息，不应存储到向量记忆")
+        if self._check_sensitive_content(code):
+            raise ValueError("代码包含敏感信息，不应存储到向量记忆")
+
         # 生成唯一ID
         doc_id = f"doc_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{self._doc_counter}"
         self._doc_counter += 1

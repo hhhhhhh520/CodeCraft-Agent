@@ -16,6 +16,7 @@ from backend.core.memory import ShortTermMemory
 from backend.llm.openai_llm import OpenAILLM
 from backend.agents.code_reviewer import CodeReviewerAgent
 from backend.agents.debugger import DebuggerAgent
+from backend.tools.executor import CodeExecutor
 
 
 # O(n^2) 复杂度的低效代码
@@ -29,6 +30,34 @@ def find_duplicates(arr):
                 duplicates.append(arr[i])
     return duplicates
 '''
+
+
+def safe_exec_code(code: str, func_name: str, *args, **kwargs):
+    """安全执行代码并调用指定函数
+
+    Args:
+        code: Python代码字符串
+        func_name: 要调用的函数名
+        *args, **kwargs: 函数参数
+
+    Returns:
+        函数执行结果或错误信息
+    """
+    executor = CodeExecutor(timeout=30)
+
+    # 使用安全执行方法
+    result = executor.safe_exec(code)
+
+    if not result["success"]:
+        print(f"  ⚠️ 安全执行失败: {result.get('error', 'Unknown error')}")
+        return None
+
+    # 获取函数并执行
+    if func_name in result["globals"]:
+        return result["globals"][func_name](*args, **kwargs)
+    else:
+        print(f"  ⚠️ 函数 {func_name} 未找到")
+        return None
 
 
 def demo_performance():
@@ -53,14 +82,18 @@ def demo_performance():
     # 性能测试数据
     test_data = list(range(1000)) + list(range(500))
 
-    # 测试原始代码
+    # 测试原始代码（使用安全执行）
     print("\n⏱️ 性能测试（1500个元素）:")
     start = time.time()
-    exec_globals = {}
-    exec(SLOW_CODE, exec_globals)
-    result_slow = exec_globals["find_duplicates"](test_data)
+    result_slow = safe_exec_code(SLOW_CODE, "find_duplicates", test_data)
     time_slow = time.time() - start
-    print(f"  - 原始代码耗时: {time_slow:.4f}秒")
+
+    if result_slow is not None:
+        print(f"  - 原始代码耗时: {time_slow:.4f}秒")
+    else:
+        print("  - 原始代码执行失败，使用默认值")
+        time_slow = 1.0
+        result_slow = []
 
     # Step 1: 代码审查
     print("\n⏳ 正在审查代码...")
@@ -94,18 +127,22 @@ def demo_performance():
     print(optimized_code)
     print("-" * 40)
 
-    # 测试优化后代码
+    # 测试优化后代码（使用安全执行）
     print("\n⏱️ 优化后性能测试:")
     start = time.time()
-    exec_globals = {}
-    exec(optimized_code, exec_globals)
-    result_fast = exec_globals["find_duplicates"](test_data)
+    result_fast = safe_exec_code(optimized_code, "find_duplicates", test_data)
     time_fast = time.time() - start
-    print(f"  - 优化后耗时: {time_fast:.4f}秒")
-    print(f"  - 性能提升: {time_slow / time_fast:.1f}x")
+
+    if result_fast is not None:
+        print(f"  - 优化后耗时: {time_fast:.4f}秒")
+        if time_fast > 0:
+            print(f"  - 性能提升: {time_slow / time_fast:.1f}x")
+    else:
+        print("  - 优化后代码执行失败")
 
     # 验证结果一致性
-    print(f"\n✅ 结果验证: {'通过' if set(result_slow) == set(result_fast) else '失败'}")
+    if result_slow is not None and result_fast is not None:
+        print(f"\n✅ 结果验证: {'通过' if set(result_slow) == set(result_fast) else '失败'}")
 
     return fix_result
 

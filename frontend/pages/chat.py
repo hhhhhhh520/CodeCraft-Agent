@@ -36,6 +36,7 @@ requirement = st.text_area(
     placeholder="例如：实现一个快速排序算法\n或者：写一个函数计算斐波那契数列",
     height=150,
     key="requirement_input",
+    max_chars=10000,  # 限制最大字符数
 )
 
 # 生成按钮
@@ -52,6 +53,15 @@ with status_placeholder.container():
 
 # 处理生成请求
 if generate_btn and requirement:
+    # 输入验证
+    from backend.utils.input_validator import validate_requirement
+    is_valid, cleaned_requirement, error_msg = validate_requirement(requirement)
+    if not is_valid:
+        st.error(f"❌ 输入验证失败: {error_msg}")
+        st.stop()
+
+    requirement = cleaned_requirement
+
     # 检查配置
     config = st.session_state.config
     if not config.get("api_key"):
@@ -60,9 +70,15 @@ if generate_btn and requirement:
 
     # 导入后端模块
     try:
-        from backend.core import Orchestrator, SharedContext
-        from backend.llm import LLMFactory
-        from backend.agents import CodeGeneratorAgent, CodeReviewerAgent, DebuggerAgent
+        from backend.core import Orchestrator, SharedContext, Memory
+        from backend.llm import LLMFactory, TokenManager
+        from backend.tools import ASTParser, CodeExecutor
+        from backend.agents import (
+            CodeGeneratorAgent,
+            CodeReviewerAgent,
+            DebuggerAgent,
+            TestGeneratorAgent,
+        )
     except ImportError as e:
         st.error(f"❌ 导入后端模块失败: {e}")
         st.stop()
@@ -79,26 +95,36 @@ if generate_btn and requirement:
         model = config.get("model", "gpt-4o-mini")
 
     try:
-        llm = LLMFactory.create("openai", model, api_key=api_key, base_url=base_url)
+        # 创建 TokenManager
+        token_manager = TokenManager(max_tokens=128000)
+        llm = LLMFactory.create("openai", model, api_key=api_key, base_url=base_url, token_manager=token_manager)
     except Exception as e:
         st.error(f"❌ 创建LLM失败: {e}")
         st.stop()
 
-    # 创建Agents
-    generator = CodeGeneratorAgent(llm=llm, tools=[])
+    # 创建工具
+    tools = [ASTParser(), CodeExecutor(timeout=30)]
+
+    # 创建记忆系统
+    memory = Memory(enable_vector=True)
+
+    # 创建Agents（注入 tools 和 memory）
+    generator = CodeGeneratorAgent(llm=llm, tools=tools, memory=memory)
     agents = {"generator": generator}
 
     if not config.get("fast_mode", False):
-        reviewer = CodeReviewerAgent(llm=llm, tools=[])
-        debugger = DebuggerAgent(llm=llm, tools=[])
+        reviewer = CodeReviewerAgent(llm=llm, tools=tools, memory=memory)
+        debugger = DebuggerAgent(llm=llm, tools=tools, memory=memory)
+        test_generator = TestGeneratorAgent(llm=llm, tools=tools, memory=memory)
         agents["reviewer"] = reviewer
         agents["debugger"] = debugger
+        agents["test_generator"] = test_generator
 
     context = SharedContext()
     orchestrator = Orchestrator(agents=agents, context=context)
 
     # Agent列表
-    all_agents = ["Generator", "Reviewer", "Debugger"]
+    all_agents = ["Generator", "Reviewer", "Debugger", "TestGenerator"]
     completed_agents = []
 
     try:
@@ -135,6 +161,7 @@ if generate_btn and requirement:
         # Step 2: 代码审查（如果未启用快速模式）
         issues = []
         review_score = 100
+        test_code = ""
 
         if not config.get("fast_mode", False) and "reviewer" in agents:
             # 更新状态为审查中
@@ -162,12 +189,23 @@ if generate_btn and requirement:
 
                 completed_agents.append("Debugger")
 
+            # Step 4: 生成测试（如果有 test_generator）
+            if "test_generator" in agents:
+                test_generator = agents["test_generator"]
+                test_result = test_generator.process({"code": code}, context.data)
+                test_code = test_result.get("test_code", "")
+                completed_agents.append("TestGenerator")
+
         # 完成
         SessionManager.set_agent_state(AgentState.DONE)
         with status_placeholder.container():
             render_agent_status(AgentState.DONE)
 
         st.success("✅ 代码生成完成！")
+
+        # 显示 Token 使用情况
+        remaining = token_manager.get_remaining()
+        st.info(f"📊 Token 使用量: {token_manager.current_usage:,} / {token_manager.max_tokens:,} (剩余: {remaining:,})")
 
         # 保存结果
         generation_result = GenerationResult(

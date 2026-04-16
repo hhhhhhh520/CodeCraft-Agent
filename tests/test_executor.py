@@ -47,4 +47,6 @@ time.sleep(10)
         result = executor.execute(code)
 
         assert result["success"] is False
-        assert "timeout" in result.get("error", "").lower() or result.get("stderr", "")
+        # 支持中英文错误消息
+        error_msg = result.get("error", "").lower()
+        assert "timeout" in error_msg or "超时" in error_msg or result.get("stderr", "")
