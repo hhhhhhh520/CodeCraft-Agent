@@ -11,16 +11,18 @@ STATUS_CONFIG = {
     AgentState.GENERATING: {"label": "生成代码", "color": "blue", "icon": "✨"},
     AgentState.REVIEWING: {"label": "代码审查", "color": "orange", "icon": "📋"},
     AgentState.FIXING: {"label": "修复优化", "color": "orange", "icon": "🔧"},
+    AgentState.TESTING: {"label": "生成测试", "color": "purple", "icon": "🧪"},
     AgentState.DONE: {"label": "完成", "color": "green", "icon": "✅"},
 }
 
-# 状态流转顺序
+# 状态流转顺序（包含测试阶段）
 STATUS_ORDER = [
     AgentState.IDLE,
     AgentState.ANALYZING,
     AgentState.GENERATING,
     AgentState.REVIEWING,
     AgentState.FIXING,
+    AgentState.TESTING,
     AgentState.DONE,
 ]
 

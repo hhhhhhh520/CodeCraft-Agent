@@ -8,13 +8,22 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
+from typing import Any
+
 import typer
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from backend.core import Orchestrator, SharedContext
-from backend.llm import LLMFactory
+from backend.core import Orchestrator, SharedContext, Memory
+from backend.llm import LLMFactory, TokenManager
+from backend.tools import ASTParser, CodeExecutor
+from backend.agents import (
+    CodeGeneratorAgent,
+    CodeReviewerAgent,
+    DebuggerAgent,
+    TestGeneratorAgent,
+)
 
 app = typer.Typer(
     name="codecraft",
@@ -22,15 +31,27 @@ app = typer.Typer(
 )
 console = Console()
 
+# 全局 TokenManager 实例
+_token_manager: TokenManager | None = None
 
-def get_orchestrator() -> Orchestrator:
+
+def get_token_manager() -> TokenManager:
+    """获取全局 TokenManager 实例"""
+    global _token_manager
+    if _token_manager is None:
+        _token_manager = TokenManager(max_tokens=128000)
+    return _token_manager
+
+
+def get_orchestrator(fast: bool = False) -> Orchestrator:
     """获取Orchestrator实例
+
+    Args:
+        fast: 快速模式，跳过代码审查和测试生成
 
     Returns:
         配置好的Orchestrator实例
     """
-    import os
-
     # 支持 DeepSeek 或 OpenAI
     api_key = os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -47,26 +68,29 @@ def get_orchestrator() -> Orchestrator:
         model = "gpt-4o-mini"
         console.print("[dim]使用 OpenAI API[/dim]")
 
-    # 创建LLM
-    llm = LLMFactory.create("openai", model, api_key=api_key, base_url=base_url)
+    # 创建LLM（集成 TokenManager）
+    token_manager = get_token_manager()
+    llm = LLMFactory.create("openai", model, api_key=api_key, base_url=base_url, token_manager=token_manager)
 
-    # 创建所有Agent
-    from backend.agents import (
-        CodeGeneratorAgent,
-        CodeReviewerAgent,
-        DebuggerAgent,
-    )
+    # 创建工具
+    tools: list[Any] = [ASTParser(), CodeExecutor(timeout=30)]
 
-    generator = CodeGeneratorAgent(llm=llm, tools=[])
-    reviewer = CodeReviewerAgent(llm=llm, tools=[])
-    debugger = DebuggerAgent(llm=llm, tools=[])
+    # 创建记忆系统
+    memory = Memory(enable_vector=True)
 
-    # 创建Orchestrator（完整多Agent协作）
-    agents = {
-        "generator": generator,
-        "reviewer": reviewer,
-        "debugger": debugger,
-    }
+    # 创建所有Agent（注入 tools 和 memory）
+    generator = CodeGeneratorAgent(llm=llm, tools=tools, memory=memory)
+    agents: dict[str, Any] = {"generator": generator}
+
+    if not fast:
+        reviewer = CodeReviewerAgent(llm=llm, tools=tools, memory=memory)
+        debugger = DebuggerAgent(llm=llm, tools=tools, memory=memory)
+        test_generator = TestGeneratorAgent(llm=llm, tools=tools, memory=memory)
+        agents["reviewer"] = reviewer
+        agents["debugger"] = debugger
+        agents["test_generator"] = test_generator
+
+    # 创建Orchestrator
     context = SharedContext()
 
     return Orchestrator(agents=agents, context=context)
@@ -82,11 +106,9 @@ def generate(requirement: str, fast: bool = False) -> None:
     """
     console.print(Panel(f"[bold blue]正在生成代码...[/bold blue]\n{requirement}"))
 
-    orchestrator = get_orchestrator()
+    orchestrator = get_orchestrator(fast=fast)
 
-    # 快速模式：移除 reviewer 和 debugger
     if fast:
-        orchestrator.agents = {"generator": orchestrator.agents["generator"]}
         console.print("[dim]快速模式：跳过代码审查[/dim]")
 
     result = orchestrator.process_request(requirement)
@@ -117,14 +139,13 @@ def chat(fast: bool = False) -> None:
     if fast:
         console.print("[dim]快速模式：跳过代码审查[/dim]")
     else:
-        console.print("多Agent协作: 生成 → 审查 → 修复优化")
+        console.print("多Agent协作: 生成 → 审查 → 修复优化 → 测试")
     console.print("输入需求生成代码，输入 'exit' 退出\n")
 
-    orchestrator = get_orchestrator()
+    orchestrator = get_orchestrator(fast=fast)
 
-    # 快速模式：移除 reviewer 和 debugger
-    if fast:
-        orchestrator.agents = {"generator": orchestrator.agents["generator"]}
+    # 显示 Token 使用情况
+    token_manager = get_token_manager()
 
     while True:
         try:

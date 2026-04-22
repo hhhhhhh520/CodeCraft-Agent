@@ -220,7 +220,27 @@ class Orchestrator:
                     break
 
                 if review_result.get("passed", True):
-                    # 审查通过，完成
+                    # 审查通过，进入测试阶段
+                    result["review_score"] = review_result.get("score", 100)
+
+                    # 如果有 test_generator，执行测试生成
+                    if "test_generator" in self.agents:
+                        if not self.state_machine.transition(TaskState.TESTING):
+                            logger.warning("Failed to transition to TESTING")
+                            break
+
+                        try:
+                            test_result = self.agents["test_generator"].process(
+                                {"code": result.get("code", "")},
+                                self.context.data,
+                            )
+                            if test_result and isinstance(test_result, dict):
+                                result["test_code"] = test_result.get("test_code", "")
+                                result["test_passed"] = test_result.get("passed", True)
+                        except Exception as e:
+                            logger.warning(f"Test generation failed: {e}")
+
+                    # 测试完成，标记完成
                     if not self.state_machine.transition(TaskState.DONE):
                         logger.warning("Failed to transition to DONE after review pass")
                     return result

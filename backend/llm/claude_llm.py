@@ -14,16 +14,17 @@ class ClaudeLLM(BaseLLM):
     """
 
     def __init__(
-        self, model: str, api_key: Optional[str] = None, **kwargs: Any
+        self, model: str, api_key: Optional[str] = None, token_manager: Optional[Any] = None, **kwargs: Any
     ) -> None:
         """初始化Claude LLM
 
         Args:
             model: 模型名称 (如 claude-3-5-sonnet-20241022)
             api_key: API密钥，如未提供则从环境变量读取
+            token_manager: Token管理器实例
             **kwargs: 额外配置参数
         """
-        super().__init__(model, **kwargs)
+        super().__init__(model, token_manager=token_manager, **kwargs)
         self.api_key = api_key
         self.client = Anthropic(api_key=api_key)
 
@@ -56,7 +57,18 @@ class ClaudeLLM(BaseLLM):
             messages=claude_messages,
         )
 
-        return response.content[0].text
+        content = response.content[0].text
+
+        # 追踪Token使用量
+        self._track_tokens(content)
+
+        # 如果API返回了token使用量，使用实际值
+        if hasattr(response, 'usage') and response.usage and self.token_manager:
+            actual_tokens = response.usage.input_tokens + response.usage.output_tokens
+            self.token_manager.current_usage -= self.token_manager.estimate_tokens(content)
+            self.token_manager.track_usage(actual_tokens)
+
+        return content
 
     def stream(self, messages: list[dict[str, str]], **kwargs: Any) -> Iterator[str]:
         """流式调用Claude模型
@@ -79,6 +91,7 @@ class ClaudeLLM(BaseLLM):
                     {"role": msg["role"], "content": msg["content"]}
                 )
 
+        full_content = ""
         with self.client.messages.stream(
             model=self.model,
             max_tokens=kwargs.get("max_tokens", 4096),
@@ -86,4 +99,8 @@ class ClaudeLLM(BaseLLM):
             messages=claude_messages,
         ) as stream:
             for text in stream.text_stream:
+                full_content += text
                 yield text
+
+        # 流式结束后追踪总Token
+        self._track_tokens(full_content)
