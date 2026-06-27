@@ -31,13 +31,6 @@ class TestBaseAgent:
         result = agent.process({"task": "generate"}, {})
         assert result == {"result": "processed: generate"}
 
-    def test_agent_observe(self):
-        """测试Agent观察方法"""
-        llm = Mock()
-        agent = ConcreteAgent(name="test_agent", llm=llm, tools=[])
-        observation = agent.observe({"state": "running"})
-        assert observation == {"observation": {"state": "running"}}
-
     def test_agent_with_tools(self):
         """测试Agent携带工具"""
         llm = Mock()

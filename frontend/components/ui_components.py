@@ -1,5 +1,6 @@
 """自定义UI组件库 - CodeCraft Agent"""
 
+import html as html_lib
 import streamlit as st
 from frontend.styles.theme import THEME_COLORS, AGENT_COLORS, get_agent_color
 from typing import Optional
@@ -259,9 +260,9 @@ def render_code_block(code: str, language: str = "python", title: str = None, sh
     lines = code.strip().split('\n')
     line_count = len(lines)
 
-    # 生成带行号的代码
+    # 生成带行号的代码（转义HTML防止XSS）
     numbered_code = '\n'.join(
-        f'<span style="color: {THEME_COLORS["text_muted"]}; user-select: none;">{str(i+1).rjust(3)}  </span>{line}'
+        f'<span style="color: {THEME_COLORS["text_muted"]}; user-select: none;">{str(i+1).rjust(3)}  </span>{html_lib.escape(line)}'
         for i, line in enumerate(lines)
     )
 
@@ -463,7 +464,7 @@ def render_issue_list(issues: list):
                 color: {THEME_COLORS['text_secondary']};
                 font-size: 0.9rem;
                 line-height: 1.5;
-            ">{issue}</span>
+            ">{html_lib.escape(str(issue))}</span>
         </div>
         """
 
@@ -541,8 +542,8 @@ def render_history_card(requirement: str, timestamp: str, score: int, index: int
         score_color = THEME_COLORS['error']
         score_bg = f"rgba(239, 68, 68, 0.15)"
 
-    # 截断需求文本
-    display_requirement = requirement[:60] + "..." if len(requirement) > 60 else requirement
+    # 截断需求文本（转义HTML防止XSS）
+    display_requirement = html_lib.escape(requirement[:60]) + "..." if len(requirement) > 60 else html_lib.escape(requirement)
 
     st.markdown(f"""
     <div style="

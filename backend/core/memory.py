@@ -139,6 +139,10 @@ class Memory:
 
         return results[:k]
 
+    def search(self, query: str, k: int = 5) -> list[dict[str, Any]]:
+        """搜索记忆（recall的别名，保持向后兼容）"""
+        return self.recall(query, k)
+
     def get_recent(self, n: int = 5) -> list[dict[str, Any]]:
         """获取最近的记忆
 
@@ -160,6 +164,10 @@ class Memory:
         self.long_term.clear()
         if self.vector_memory:
             self.vector_memory.clear()
+
+    def clear(self) -> None:
+        """清空所有记忆（clear_all的别名，保持向后兼容）"""
+        self.clear_all()
 
     @property
     def is_vector_enabled(self) -> bool:

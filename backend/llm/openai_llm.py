@@ -1,10 +1,14 @@
 """OpenAI LLM实现模块"""
 
+import logging
 from typing import Any, Iterator, Optional
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError, APITimeoutError, APIConnectionError
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from .base import BaseLLM
+
+logger = logging.getLogger("codecraft.llm.openai")
 
 
 class OpenAILLM(BaseLLM):
@@ -19,6 +23,8 @@ class OpenAILLM(BaseLLM):
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         token_manager: Optional[Any] = None,
+        timeout: float = 30.0,
+        max_retries: int = 3,
         **kwargs: Any
     ) -> None:
         """初始化OpenAI LLM
@@ -28,13 +34,25 @@ class OpenAILLM(BaseLLM):
             api_key: API密钥，如未提供则从环境变量读取
             base_url: API基础URL，用于兼容OpenAI格式的API（如DeepSeek）
             token_manager: Token管理器实例
+            timeout: 请求超时时间（秒）
+            max_retries: 最大重试次数
             **kwargs: 额外配置参数
         """
         super().__init__(model, token_manager=token_manager, **kwargs)
         self.api_key = api_key
         self.base_url = base_url
-        self.client = OpenAI(api_key=api_key, base_url=base_url)
+        self.timeout = timeout
+        self.max_retries = max_retries
+        self.client = OpenAI(api_key=api_key, base_url=base_url, timeout=timeout, max_retries=0)
 
+    @retry(
+        retry=retry_if_exception_type((RateLimitError, APITimeoutError, APIConnectionError)),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=30),
+        before_sleep=lambda retry_state: logger.warning(
+            f"LLM调用失败，正在重试 ({retry_state.attempt_number}/3): {retry_state.outcome.exception()}"
+        ) if retry_state.outcome else None,
+    )
     def invoke(self, messages: list[dict[str, str]], **kwargs: Any) -> str:
         """调用OpenAI模型
 

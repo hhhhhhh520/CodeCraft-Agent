@@ -3,6 +3,7 @@
 提供代码生成的实时流式显示功能。
 """
 
+import html as html_lib
 import streamlit as st
 from typing import Iterator, Optional
 import time
@@ -79,7 +80,7 @@ def render_streaming_text(
         if show_progress:
             placeholder.markdown(
                 f"""
-                {full_text}
+                {html_lib.escape(full_text)}
 
                 <div style="font-size: 12px; color: #888;">
                     📝 生成中... {char_count} 字符

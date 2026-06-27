@@ -202,6 +202,7 @@ class Orchestrator:
             if self.state_machine.current_state == TaskState.GENERATING:
                 if not self.state_machine.transition(TaskState.REVIEWING):
                     logger.warning("Failed to transition to REVIEWING in feedback loop")
+                    self.state_machine.transition(TaskState.FAILED)
                     break
 
             if self.state_machine.current_state == TaskState.REVIEWING:
@@ -213,10 +214,12 @@ class Orchestrator:
 
                     if review_result is None or not isinstance(review_result, dict):
                         logger.error("Reviewer returned invalid result")
+                        self.state_machine.transition(TaskState.FAILED)
                         break
 
                 except Exception as e:
                     logger.exception("Reviewer raised exception")
+                    self.state_machine.transition(TaskState.FAILED)
                     break
 
                 if review_result.get("passed", True):
@@ -227,6 +230,7 @@ class Orchestrator:
                     if "test_generator" in self.agents:
                         if not self.state_machine.transition(TaskState.TESTING):
                             logger.warning("Failed to transition to TESTING")
+                            self.state_machine.transition(TaskState.FAILED)
                             break
 
                         try:
@@ -248,6 +252,7 @@ class Orchestrator:
                     # 审查不通过，进入修复
                     if not self.state_machine.transition(TaskState.FIXING):
                         logger.warning("Failed to transition to FIXING")
+                        self.state_machine.transition(TaskState.FAILED)
                         break
                     result["issues"] = review_result.get("issues", [])
                     result["review_score"] = review_result.get("score", 0)
@@ -265,20 +270,27 @@ class Orchestrator:
 
                     if fix_result is None or not isinstance(fix_result, dict):
                         logger.error("Debugger returned invalid result")
+                        self.state_machine.transition(TaskState.FAILED)
                         break
 
                 except Exception as e:
                     logger.exception("Debugger raised exception")
+                    self.state_machine.transition(TaskState.FAILED)
                     break
 
                 result["code"] = fix_result.get("fixed_code", result.get("code", ""))
 
                 if not self.state_machine.transition(TaskState.REVIEWING):
                     logger.warning("Failed to transition back to REVIEWING")
+                    self.state_machine.transition(TaskState.FAILED)
                     break
 
                 iteration += 1
 
-        # 达到最大迭代次数
+        # 达到最大迭代次数，如果还在中间状态则标记失败
+        if self.state_machine.current_state not in (TaskState.DONE, TaskState.FAILED):
+            logger.warning(f"Feedback loop exited in state {self.state_machine.current_state}")
+            self.state_machine.transition(TaskState.FAILED)
+
         logger.info(f"Feedback loop completed after {iteration} iterations")
         return result

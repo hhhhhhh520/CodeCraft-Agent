@@ -27,9 +27,9 @@ class StateMachine:
         TaskState.PENDING: [TaskState.ANALYZING],
         TaskState.ANALYZING: [TaskState.GENERATING, TaskState.REVIEWING],
         TaskState.GENERATING: [TaskState.REVIEWING, TaskState.FAILED],
-        TaskState.REVIEWING: [TaskState.TESTING, TaskState.FIXING, TaskState.DONE],
-        TaskState.FIXING: [TaskState.REVIEWING, TaskState.GENERATING],
-        TaskState.TESTING: [TaskState.DONE, TaskState.FIXING],
+        TaskState.REVIEWING: [TaskState.TESTING, TaskState.FIXING, TaskState.DONE, TaskState.FAILED],
+        TaskState.FIXING: [TaskState.REVIEWING, TaskState.GENERATING, TaskState.FAILED],
+        TaskState.TESTING: [TaskState.DONE, TaskState.FIXING, TaskState.FAILED],
         TaskState.DONE: [],
         TaskState.FAILED: [TaskState.PENDING],
     }

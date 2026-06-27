@@ -163,3 +163,79 @@ class TestInputValidation:
         """测试过短API Key验证"""
         is_valid, cleaned, error = validate_api_key("sk-abc")
         assert is_valid is False
+
+
+class TestAdvancedSecurityVectors:
+    """高级攻击向量测试"""
+
+    def test_detect_subclasses_chain(self):
+        """测试检测__subclasses__链攻击"""
+        code = "().__class__.__bases__[0].__subclasses__()"
+        is_safe, issues = CodeValidator.validate(code)
+        assert is_safe is False
+        assert len(issues) > 0
+
+    def test_detect_dunder_attributes(self):
+        """测试检测魔术属性访问"""
+        code = "obj.__globals__['__builtins__']"
+        is_safe, issues = CodeValidator.validate(code)
+        assert is_safe is False
+        assert len(issues) > 0
+
+    def test_detect_mro_access(self):
+        """测试检测MRO访问"""
+        code = "cls.__mro__"
+        is_safe, issues = CodeValidator.validate(code)
+        assert is_safe is False
+        assert len(issues) > 0
+
+    def test_detect_bases_access(self):
+        """测试检测基类访问"""
+        code = "cls.__bases__"
+        is_safe, issues = CodeValidator.validate(code)
+        assert is_safe is False
+        assert len(issues) > 0
+
+    def test_safe_exec_blocks_dunder_getattr(self):
+        """测试safe_exec阻止通过getattr访问魔术属性"""
+        executor = CodeExecutor(timeout=5)
+        code = """
+obj = "test"
+cls = getattr(obj, '__class__')
+"""
+        result = executor.safe_exec(code)
+        assert result["success"] is False
+
+    def test_safe_exec_allows_normal_getattr(self):
+        """测试safe_exec允许正常的属性访问"""
+        executor = CodeExecutor(timeout=5)
+        code = """
+class MyClass:
+    name = "test"
+obj = MyClass()
+name = getattr(obj, "name")
+"""
+        result = executor.safe_exec(code)
+        assert result["success"] is True
+        assert result["globals"]["name"] == "test"
+
+    def test_detect_vars_function(self):
+        """测试检测vars()函数"""
+        code = "vars(obj)"
+        is_safe, issues = CodeValidator.validate(code)
+        assert is_safe is False
+        assert len(issues) > 0
+
+    def test_detect_dir_function(self):
+        """测试检测dir()函数"""
+        code = "dir(obj)"
+        is_safe, issues = CodeValidator.validate(code)
+        assert is_safe is False
+        assert len(issues) > 0
+
+    def test_non_strict_mode_records_issues(self):
+        """测试非严格模式记录问题但不阻止"""
+        code = "import os"
+        is_safe, issues = CodeValidator.validate(code, strict=False)
+        # 非严格模式下，有issues但返回True
+        assert len(issues) > 0

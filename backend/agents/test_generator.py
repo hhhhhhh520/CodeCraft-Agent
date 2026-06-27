@@ -1,9 +1,12 @@
 """测试生成Agent模块"""
 
-import re
+import logging
 from typing import Any, Optional
 
 from backend.core.agent import BaseAgent
+from backend.utils.code_utils import extract_code_from_response
+
+logger = logging.getLogger("codecraft.agents.test_generator")
 
 
 class TestGeneratorAgent(BaseAgent):
@@ -39,7 +42,7 @@ class TestGeneratorAgent(BaseAgent):
             context: 共享上下文
 
         Returns:
-            包含测试代码的结果字典
+            包含测试代码的结果字典，passed字段反映实际执行结果
         """
         code = input_data.get("code", "")
 
@@ -49,24 +52,30 @@ class TestGeneratorAgent(BaseAgent):
         ]
 
         response = self.llm.invoke(messages)
-        test_code = self._extract_code(response)
+        test_code = extract_code_from_response(response)
+
+        # 执行生成的测试代码验证其有效性
+        test_passed = False
+        test_error = ""
+        if test_code:
+            try:
+                from backend.tools.executor import CodeExecutor
+                executor = CodeExecutor(timeout=10)
+                # 将原始代码和测试代码组合执行
+                full_code = code + "\n\n" + test_code
+                result = executor.execute(full_code, validate=False)
+                test_passed = result.get("success", False)
+                if not test_passed:
+                    test_error = result.get("stderr", result.get("error", ""))
+                    logger.debug(f"测试执行失败: {test_error[:200]}")
+            except Exception as e:
+                logger.warning(f"测试执行异常: {e}")
+                test_error = str(e)
 
         return {
             "test_code": test_code,
             "original_code": code,
-            "passed": True,  # 简化实现，默认通过
+            "passed": test_passed,
+            "test_error": test_error,
         }
 
-    def _extract_code(self, response: str) -> str:
-        """从响应中提取代码块"""
-        pattern = r"```python\s*\n(.*?)\n```"
-        matches = re.findall(pattern, response, re.DOTALL)
-        if matches:
-            return matches[0]
-
-        pattern = r"```\s*\n(.*?)\n```"
-        matches = re.findall(pattern, response, re.DOTALL)
-        if matches:
-            return matches[0]
-
-        return response.strip()

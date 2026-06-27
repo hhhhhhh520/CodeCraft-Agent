@@ -41,8 +41,7 @@ def quick_sort(arr: list[int]) -> list[int]:
 
     def test_extract_code_from_response(self):
         """测试从响应中提取代码"""
-        llm = Mock()
-        agent = CodeGeneratorAgent(llm=llm, tools=[])
+        from backend.utils.code_utils import extract_code_from_response
 
         response = '''这是一个快速排序实现：
 ```python
@@ -51,5 +50,5 @@ def quick_sort(arr):
 ```
 希望对你有帮助！'''
 
-        code = agent._extract_code(response)
+        code = extract_code_from_response(response)
         assert "def quick_sort" in code

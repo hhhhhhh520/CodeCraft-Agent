@@ -9,11 +9,6 @@ import re
 from typing import Any, Optional
 
 
-class CodeSecurityError(Exception):
-    """代码安全错误"""
-    pass
-
-
 class CodeValidator:
     """代码安全验证器"""
 
@@ -85,6 +80,13 @@ class CodeValidator:
             (r"getattr\s*\([^)]*,\s*['\"]__", "反射访问私有属性"),
             (r"globals\s*\(\)", "访问全局命名空间"),
             (r"locals\s*\(\)", "访问局部命名空间"),
+            (r"__subclasses__\s*\(", "子类枚举"),
+            (r"__class__", "访问类对象"),
+            (r"__mro__", "访问方法解析顺序"),
+            (r"__globals__", "访问全局命名空间引用"),
+            (r"__bases__", "访问基类"),
+            (r"vars\s*\(", "访问对象属性字典"),
+            (r"dir\s*\(", "列出对象属性"),
         ]
 
         for pattern, desc in dangerous_patterns:
@@ -214,6 +216,12 @@ class CodeExecutor:
                 "security_issues": issues,
             }
 
+        # 安全的 getattr：禁止访问双下划线属性（防止沙箱逃逸）
+        def safe_getattr(obj: Any, name: str, *args: Any) -> Any:
+            if isinstance(name, str) and (name.startswith("__") or name.endswith("__")):
+                raise AttributeError(f"不允许访问魔术属性: {name}")
+            return getattr(obj, name, *args)
+
         # 构建安全的全局命名空间
         safe_builtins = {
             "print": print,
@@ -240,7 +248,9 @@ class CodeExecutor:
             "round": round,
             "isinstance": isinstance,
             "hasattr": hasattr,
-            "getattr": getattr,
+            "getattr": safe_getattr,
+            "__build_class__": __build_class__,
+            "__name__": "__sandbox__",
             "True": True,
             "False": False,
             "None": None,

@@ -1,5 +1,6 @@
 """历史记录页面 - CodeCraft Agent 深色科技主题"""
 
+import html as html_lib
 import streamlit as st
 from datetime import datetime
 from pathlib import Path
@@ -168,7 +169,7 @@ else:
                                 ⚠ 发现的问题
                             </div>
                             <ul style="color: {THEME_COLORS['text_secondary']}; margin: 0; padding-left: 1.5rem;">
-                                {"".join(f"<li>{issue}</li>" for issue in item.get("issues", []))}
+                                {"".join(f"<li>{html_lib.escape(str(issue))}</li>" for issue in item.get("issues", []))}
                             </ul>
                         </div>
                         """, unsafe_allow_html=True)

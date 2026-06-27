@@ -7,7 +7,7 @@ from typing import Any, Optional
 class BaseAgent(ABC):
     """Agent基类
 
-    定义所有Agent必须实现的接口，支持ReAct模式。
+    定义所有Agent必须实现的接口。
     """
 
     def __init__(
@@ -42,41 +42,6 @@ class BaseAgent(ABC):
             处理结果
         """
         pass
-
-    def observe(self, state: dict) -> dict:
-        """观察当前状态
-
-        Args:
-            state: 当前状态
-
-        Returns:
-            观察结果
-        """
-        return {"observation": state}
-
-    def think(self, observation: dict) -> str:
-        """推理下一步行动
-
-        Args:
-            observation: 观察结果
-
-        Returns:
-            推理结果
-        """
-        # 默认实现，子类可覆盖
-        return f"Agent {self.name} thinking about {observation}"
-
-    def act(self, thought: str) -> dict:
-        """执行行动
-
-        Args:
-            thought: 推理结果
-
-        Returns:
-            行动结果
-        """
-        # 默认实现，子类可覆盖
-        return {"action": "default", "thought": thought}
 
     def receive_message(self, message: Any) -> Optional[dict]:
         """接收消息

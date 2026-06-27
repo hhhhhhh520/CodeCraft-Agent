@@ -1,10 +1,13 @@
 """代码审查Agent模块"""
 
 import json
+import logging
 import re
 from typing import Any, Optional
 
 from backend.core.agent import BaseAgent
+
+logger = logging.getLogger("codecraft.agents.reviewer")
 
 
 class CodeReviewerAgent(BaseAgent):
@@ -81,14 +84,13 @@ class CodeReviewerAgent(BaseAgent):
         Returns:
             解析后的审查结果
         """
-        # 尝试提取JSON
+        # 尝试直接解析JSON
         try:
-            # 尝试直接解析
             return json.loads(response)
         except json.JSONDecodeError:
             pass
 
-        # 尝试从代码块中提取
+        # 尝试从代码块中提取JSON
         json_pattern = r"```json\s*\n(.*?)\n```"
         matches = re.findall(json_pattern, response, re.DOTALL)
         if matches:
@@ -97,11 +99,22 @@ class CodeReviewerAgent(BaseAgent):
             except json.JSONDecodeError:
                 pass
 
-        # 返回默认结果
+        # 宽松提取：尝试清理常见问题后解析
+        cleaned = response.strip()
+        # 去掉可能的尾随逗号
+        cleaned = re.sub(r',\s*}', '}', cleaned)
+        cleaned = re.sub(r',\s*]', ']', cleaned)
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        # 解析失败，记录警告并返回不通过（宁可误杀不可漏放）
+        logger.warning(f"审查结果JSON解析失败，原始响应: {response[:200]}...")
         return {
-            "passed": True,
-            "issues": [],
-            "score": 70,
+            "passed": False,
+            "issues": [{"severity": "medium", "type": "parse_error", "message": "审查结果解析失败，请重试"}],
+            "score": 0,
             "summary": "无法解析审查结果",
             "raw_response": response,
         }

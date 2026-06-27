@@ -1,10 +1,10 @@
 """代码生成Agent模块"""
 
-import re
 from typing import Any, Optional
 
 from backend.core.agent import BaseAgent
 from backend.tools.executor import CodeValidator
+from backend.utils.code_utils import extract_code_from_response
 
 
 class CodeGeneratorAgent(BaseAgent):
@@ -20,6 +20,12 @@ class CodeGeneratorAgent(BaseAgent):
 2. 添加类型注解
 3. 包含docstring
 4. 考虑异常处理
+
+安全约束（必须遵守）：
+- 禁止使用 importlib、runpy、ctypes 等动态导入/执行模块
+- 禁止使用 eval()、exec()、compile()、__import__()
+- 禁止通过 __class__、__bases__、__subclasses__、__mro__ 等魔术属性进行反射
+- 需要导入模块时使用标准 import 语句，不要动态导入
 
 直接输出代码，使用```python代码块包裹。"""
 
@@ -53,7 +59,7 @@ class CodeGeneratorAgent(BaseAgent):
         ]
 
         response = self.llm.invoke(messages)
-        code = self._extract_code(response)
+        code = extract_code_from_response(response)
 
         # 安全验证
         security_issues = []
@@ -77,26 +83,3 @@ class CodeGeneratorAgent(BaseAgent):
             "security_issues": security_issues,
         }
 
-    def _extract_code(self, response: str) -> str:
-        """从响应中提取代码块
-
-        Args:
-            response: LLM响应文本
-
-        Returns:
-            提取的代码文本
-        """
-        # 匹配```python...```代码块
-        pattern = r"```python\s*\n(.*?)\n```"
-        matches = re.findall(pattern, response, re.DOTALL)
-        if matches:
-            return matches[0]
-
-        # 匹配```...```代码块
-        pattern = r"```\s*\n(.*?)\n```"
-        matches = re.findall(pattern, response, re.DOTALL)
-        if matches:
-            return matches[0]
-
-        # 如果没有代码块，返回原始响应
-        return response.strip()

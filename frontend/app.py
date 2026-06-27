@@ -138,13 +138,13 @@ st.markdown("<br>", unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    render_stat_card(value="67", label="测试用例", color="#00f5d4")
+    render_stat_card(value="4", label="专业Agent", color="#00f5d4")
 
 with col2:
-    render_stat_card(value="81%", label="覆盖率", color="#f72585")
+    render_stat_card(value="8", label="状态节点", color="#f72585")
 
 with col3:
-    render_stat_card(value="4", label="专业Agent", color="#ffd60a")
+    render_stat_card(value="3轮", label="自动修复", color="#ffd60a")
 
 with col4:
     render_stat_card(value="∞", label="可能", color="#4361ee")

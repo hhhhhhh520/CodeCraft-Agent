@@ -160,9 +160,11 @@ if generate_btn and requirement:
         code_placeholder = st.empty()
         full_code = ""
 
+        import html as html_lib
+
         for chunk in llm.stream(messages):
             full_code += chunk
-            # 简化显示，避免频繁更新
+            # 简化显示，避免频繁更新（转义HTML防止XSS）
             code_placeholder.markdown(f"""
             <div style="
                 background: {THEME_COLORS['bg_tertiary']};
@@ -175,14 +177,12 @@ if generate_btn and requirement:
                 white-space: pre-wrap;
                 max-height: 400px;
                 overflow-y: auto;
-            ">{full_code}</div>
+            ">{html_lib.escape(full_code)}</div>
             """, unsafe_allow_html=True)
 
         # 提取代码块
-        import re
-        pattern = r"```python\s*\n(.*?)\n```"
-        matches = re.findall(pattern, full_code, re.DOTALL)
-        code = matches[0] if matches else full_code
+        from backend.utils.code_utils import extract_code_from_response
+        code = extract_code_from_response(full_code)
 
         completed_agents.append("Generator")
 
