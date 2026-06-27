@@ -1,7 +1,7 @@
 # CodeCraft Agent
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Tests](https://img.shields.io/badge/Tests-99%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-135%20passed-brightgreen)
 ![Coverage](https://img.shields.io/badge/Coverage-81%25-green)
 ![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-orange)
 
@@ -20,7 +20,7 @@
 | 📊 状态机管理 | 8状态有限状态机，确保任务流转可控 |
 | 🔌 多模型支持 | OpenAI / Claude / DeepSeek 可切换 |
 | 🧠 向量记忆 | ChromaDB语义检索历史代码 |
-| ✅ 高测试覆盖 | 99个测试用例 |
+| ✅ 高测试覆盖 | 135个测试用例 |
 
 ## 功能特性
 
@@ -36,12 +36,11 @@
 | 类别 | 技术 |
 |------|------|
 | 语言 | Python 3.10+ |
-| LLM框架 | LangChain |
-| LLM API | OpenAI / Claude / DeepSeek |
+| LLM API | OpenAI / Claude / DeepSeek（tenacity重试） |
 | CLI框架 | Typer + Rich |
 | Web框架 | Streamlit |
 | 向量存储 | ChromaDB |
-| 测试框架 | Pytest (99个测试) |
+| 测试框架 | Pytest (135个测试) |
 
 ## 项目结构
 
@@ -221,19 +220,23 @@ stateDiagram-v2
     REVIEWING --> TESTING
     REVIEWING --> FIXING
     REVIEWING --> DONE
+    REVIEWING --> FAILED
     FIXING --> REVIEWING
     FIXING --> GENERATING
+    FIXING --> FAILED
     TESTING --> DONE
     TESTING --> FIXING
+    TESTING --> FAILED
     FAILED --> PENDING
     DONE --> [*]
 ```
 
 ### 核心特性
 
-- **ReAct推理模式** - 观察-思考-行动循环决策
-- **状态机管理** - PENDING → ANALYZING → GENERATING → REVIEWING → FIXING → TESTING → DONE
-- **反馈闭环** - 审查不通过自动修复，修复后重新审查
+- **状态机管理** - 8状态有限状态机，支持错误恢复（中间状态可转FAILED）
+- **反馈闭环** - 审查不通过自动修复，最多3次迭代
+- **安全验证** - AST级代码安全验证 + Prompt注入防护
+- **LLM重试** - tenacity指数退避重试（429/超时/连接错误）
 
 > 📄 详细架构图请查看 [docs/assets/architecture.md](docs/assets/architecture.md)
 

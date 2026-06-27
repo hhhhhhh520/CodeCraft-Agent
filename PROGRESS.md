@@ -1,6 +1,6 @@
 # CodeCraft Agent 项目进度
 
-> 最后更新: 2026-05-04
+> 最后更新: 2026-06-27
 
 ---
 
@@ -140,6 +140,39 @@
 
 ---
 
+### Phase 7: 多维度审查修复 ✅ 已完成
+
+基于 4 维度并行审查（架构/安全/测试/生产就绪），修复 18 项问题。
+
+**P0 安全修复**:
+- safe_exec: getattr 替换为 safe_getattr，阻断沙箱逃逸
+- CodeValidator: 新增 __subclasses__/__class__/__mro__/__globals__/__bases__/vars/dir 检测
+- 前端 XSS: 所有动态内容加 html.escape（ui_components/chat/history/streaming_display）
+- Generator/Debugger: system prompt 约束不使用 importlib/eval/exec
+
+**P1 架构修复**:
+- _extract_code 提取到 code_utils.py，消除 4 处重复
+- LLM 调用加 tenacity 重试（指数退避，429/超时/连接错误）
+- 移除 errors.py 未使用异常类（CodeCraftError/LLMError 等）
+- 移除 BaseAgent 死代码（observe/think/act 方法）
+- HybridMemory 合并为 Memory 别名
+
+**P2 健壮性修复**:
+- LLM 加 timeout=30s
+- 状态机错误恢复：所有中间状态允许转 FAILED（REVIEWING/FIXING/TESTING）
+- TestGenerator: 实际执行测试代码，passed 反映真实结果
+- Reviewer: JSON 解析失败返回 passed=False（fail-closed）
+
+**P3/P4**:
+- 新增 test_errors.py / test_code_utils.py（25 个测试）
+- 新增 11 个安全攻击向量测试
+- 移除 pyproject.toml 未使用的 langchain 依赖
+- 修复前端硬编码统计数字
+
+**测试结果**: 135 个测试通过
+
+---
+
 ## 当前项目结构
 
 ```
@@ -190,7 +223,11 @@ codecraft-agent/
     ├── test_executor.py        ✅
     ├── test_test_generator.py  ✅
     ├── test_token_manager.py   ✅
-    └── test_integration.py     ✅
+    ├── test_integration.py     ✅
+    ├── test_security.py        ✅
+    ├── test_errors.py          ✅
+    ├── test_code_utils.py      ✅
+    └── test_vector_memory.py   ✅
 ```
 
 ---
