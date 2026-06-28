@@ -1,7 +1,7 @@
 # CodeCraft Agent
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Tests](https://img.shields.io/badge/Tests-135%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-130%20passed-brightgreen)
 ![Coverage](https://img.shields.io/badge/Coverage-81%25-green)
 ![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-orange)
 
@@ -20,7 +20,7 @@
 | 📊 状态机管理 | 8状态有限状态机，确保任务流转可控 |
 | 🔌 多模型支持 | OpenAI / Claude / DeepSeek 可切换 |
 | 🧠 向量记忆 | ChromaDB语义检索历史代码 |
-| ✅ 高测试覆盖 | 135个测试用例 |
+| ✅ 高测试覆盖 | 130个测试用例 |
 
 ## 功能特性
 
@@ -40,7 +40,7 @@
 | CLI框架 | Typer + Rich |
 | Web框架 | Streamlit |
 | 向量存储 | ChromaDB |
-| 测试框架 | Pytest (135个测试) |
+| 测试框架 | Pytest (130个测试) |
 
 ## 项目结构
 
@@ -51,7 +51,6 @@ CodeCraft Agent/
 │   │   ├── agent.py            # Agent基类
 │   │   ├── orchestrator.py     # 多Agent协调器
 │   │   ├── state.py            # 任务状态机
-│   │   ├── protocol.py         # Agent通信协议
 │   │   ├── context.py          # 共享上下文
 │   │   ├── memory.py           # 记忆系统
 │   │   ├── logger.py           # 日志系统

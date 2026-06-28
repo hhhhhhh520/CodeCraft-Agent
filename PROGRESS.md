@@ -1,6 +1,6 @@
 # CodeCraft Agent 项目进度
 
-> 最后更新: 2026-06-27
+> 最后更新: 2026-06-28
 
 ---
 
@@ -145,7 +145,6 @@
 基于 4 维度并行审查（架构/安全/测试/生产就绪），修复 18 项问题。
 
 **P0 安全修复**:
-- safe_exec: getattr 替换为 safe_getattr，阻断沙箱逃逸
 - CodeValidator: 新增 __subclasses__/__class__/__mro__/__globals__/__bases__/vars/dir 检测
 - 前端 XSS: 所有动态内容加 html.escape（ui_components/chat/history/streaming_display）
 - Generator/Debugger: system prompt 约束不使用 importlib/eval/exec
@@ -169,13 +168,50 @@
 - 移除 pyproject.toml 未使用的 langchain 依赖
 - 修复前端硬编码统计数字
 
-**测试结果**: 135 个测试通过
+**测试结果**: 135 个测试通过（后调整为 130 个，见 Phase 8）
 
 **Bug 修复**:
 - TestGenerator passed 永远为 True：测试函数定义了但从未调用 → 新增 _extract_test_calls() 自动追加调用代码
 
 **新增文档**:
 - TEST_SPECIFICATION.md — 78 项功能测试规格（含操作步骤和预期结果）
+
+---
+
+### Phase 8: 多维度深度审查修复 ✅ 已完成
+
+基于 5 维度并行审查（代码质量/安全/架构/生产就绪/前端UX），去重后约 55 个独立问题。
+
+**P0 修复（4 项）**:
+- 状态机卡死: orchestrator.process_request 加 state_machine.reset()
+- safe_exec 沙箱: 完全移除 exec() 沙箱，统一使用 subprocess execute()
+- DANGEROUS_MODULES: 补全 importlib/runpy/io/builtins
+- Windows 子进程: _get_safe_env 加 TEMP/TMP/SystemRoot（固定安全路径）
+
+**P1 修复（7 项）**:
+- LLM 空响应: openai_llm/claude_llm 加空响应检查防 IndexError
+- XSS 补全: streaming_display render_streaming_code 加 html.escape
+- XSS 补全: streaming_display agent 名称 + ui_components title/language 转义
+- debugger: issues 列表访问改为 get() 安全访问
+- extract_code: 无代码块时返回空字符串而非原始文本
+- API Key 文案: "加密存储" → "编码存储（建议安装 keyring）"
+
+**P2 修复（3 项）**:
+- 删除 protocol.py 死代码（AgentMessage/MessageType 从未被使用）
+- 删除 test_protocol.py（5 个测试移除）
+- demo_performance.py: safe_exec 迁移到 execute()，func_name 白名单校验
+
+**安全增强（3 项）**:
+- CodeValidator 新增 test_safe 参数: 测试代码走宽松检查（允许 pytest/os/sys，拦截 ctypes/posix/importlib）
+- test_generator: validate=False → validate=True + test_safe=True
+- 前端 XSS: render_agent_streaming_status 和 render_code_block 参数转义
+
+**pre-commit-audit 补丁（3 项）**:
+- demo exec_and_call: func_name 白名单校验防注入
+- executor TEMP: 改用固定路径 C:\Windows\Temp 防泄露用户名
+- executor docstring: 更新 Windows 例外说明
+
+**测试结果**: 130 个测试通过
 
 ---
 
@@ -191,7 +227,6 @@ codecraft-agent/
 │   │   ├── agent.py            ✅ Agent基类
 │   │   ├── orchestrator.py     ✅ 多Agent协调器
 │   │   ├── state.py            ✅ 任务状态机
-│   │   ├── protocol.py         ✅ Agent通信协议
 │   │   ├── context.py          ✅ 共享上下文
 │   │   └── memory.py           ✅ 记忆系统
 │   ├── agents/
@@ -216,7 +251,6 @@ codecraft-agent/
 └── tests/
     ├── __init__.py             ✅
     ├── test_state.py           ✅
-    ├── test_protocol.py        ✅
     ├── test_agent.py           ✅
     ├── test_context.py         ✅
     ├── test_llm.py             ✅
