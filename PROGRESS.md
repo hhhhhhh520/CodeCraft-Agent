@@ -171,6 +171,12 @@
 
 **测试结果**: 135 个测试通过
 
+**Bug 修复**:
+- TestGenerator passed 永远为 True：测试函数定义了但从未调用 → 新增 _extract_test_calls() 自动追加调用代码
+
+**新增文档**:
+- TEST_SPECIFICATION.md — 78 项功能测试规格（含操作步骤和预期结果）
+
 ---
 
 ## 当前项目结构
