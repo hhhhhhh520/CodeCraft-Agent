@@ -1,6 +1,7 @@
 """测试生成Agent模块"""
 
 import logging
+import re
 from typing import Any, Optional
 
 from backend.core.agent import BaseAgent
@@ -61,8 +62,10 @@ class TestGeneratorAgent(BaseAgent):
             try:
                 from backend.tools.executor import CodeExecutor
                 executor = CodeExecutor(timeout=10)
-                # 将原始代码和测试代码组合执行
-                full_code = code + "\n\n" + test_code
+                # 提取所有 test_ 开头的函数并生成调用代码
+                test_func_calls = self._extract_test_calls(test_code)
+                # 将原始代码、测试代码和调用代码组合执行
+                full_code = code + "\n\n" + test_code + "\n\n" + test_func_calls
                 result = executor.execute(full_code, validate=False)
                 test_passed = result.get("success", False)
                 if not test_passed:
@@ -78,4 +81,27 @@ class TestGeneratorAgent(BaseAgent):
             "passed": test_passed,
             "test_error": test_error,
         }
+
+    def _extract_test_calls(self, test_code: str) -> str:
+        """从测试代码中提取 test_ 函数并生成调用代码
+
+        Args:
+            test_code: 测试代码字符串
+
+        Returns:
+            包含所有 test_ 函数调用的代码字符串
+        """
+        # 匹配 def test_xxx(...) 和 def test_xxx (...)
+        pattern = r"^def\s+(test_\w+)\s*\("
+        test_funcs = re.findall(pattern, test_code, re.MULTILINE)
+
+        if not test_funcs:
+            return ""
+
+        # 生成调用代码
+        calls = []
+        for func_name in test_funcs:
+            calls.append(f"try:\n    {func_name}()\nexcept Exception as e:\n    print(f'FAIL: {func_name} - {{e}}')\n    raise")
+
+        return "\n\n# Auto-generated test calls\n" + "\n".join(calls)
 
