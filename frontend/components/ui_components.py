@@ -293,7 +293,7 @@ def render_code_block(code: str, language: str = "python", title: str = None, sh
                 font-family: 'JetBrains Mono', monospace;
                 font-size: 0.8rem;
                 color: {THEME_COLORS['text_muted']};
-            ">{title or f'{language.upper()} · {line_count} lines'}</span>
+            ">{html_lib.escape(title) if title else f'{html_lib.escape(language.upper())} · {line_count} lines'}</span>
         </div>
 
         <!-- 代码区域 -->

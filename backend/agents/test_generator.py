@@ -66,7 +66,7 @@ class TestGeneratorAgent(BaseAgent):
                 test_func_calls = self._extract_test_calls(test_code)
                 # 将原始代码、测试代码和调用代码组合执行
                 full_code = code + "\n\n" + test_code + "\n\n" + test_func_calls
-                result = executor.execute(full_code, validate=False)
+                result = executor.execute(full_code, validate=True, test_safe=True)
                 test_passed = result.get("success", False)
                 if not test_passed:
                     test_error = result.get("stderr", result.get("error", ""))

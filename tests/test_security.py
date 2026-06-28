@@ -72,20 +72,19 @@ print(os.environ.get("HOME"))
         assert result["success"] is False
         assert "security" in result.get("error", "").lower() or result.get("security_issues")
 
-    def test_executor_safe_exec_restricted_namespace(self):
-        """测试safe_exec使用受限命名空间"""
-        executor = CodeExecutor(timeout=5)
+    def test_code_validator_allows_safe_code(self):
+        """测试CodeValidator允许安全代码"""
         code = "result = sum(range(10))"
-        result = executor.safe_exec(code)
-        assert result["success"] is True
-        assert result["globals"]["result"] == 45
+        is_safe, issues = CodeValidator.validate(code)
+        assert is_safe is True
+        assert len(issues) == 0
 
-    def test_executor_safe_exec_blocks_dangerous(self):
-        """测试safe_exec阻止危险操作"""
-        executor = CodeExecutor(timeout=5)
+    def test_code_validator_blocks_dangerous_import(self):
+        """测试CodeValidator阻止危险模块导入"""
         code = "import os"
-        result = executor.safe_exec(code)
-        assert result["success"] is False
+        is_safe, issues = CodeValidator.validate(code)
+        assert is_safe is False
+        assert any("os" in i for i in issues)
 
 
 class TestLogSanitization:
@@ -196,28 +195,20 @@ class TestAdvancedSecurityVectors:
         assert is_safe is False
         assert len(issues) > 0
 
-    def test_safe_exec_blocks_dunder_getattr(self):
-        """测试safe_exec阻止通过getattr访问魔术属性"""
-        executor = CodeExecutor(timeout=5)
-        code = """
-obj = "test"
-cls = getattr(obj, '__class__')
-"""
-        result = executor.safe_exec(code)
-        assert result["success"] is False
+    def test_code_validator_blocks_dunder_getattr(self):
+        """测试CodeValidator检测getattr访问魔术属性"""
+        code = 'cls = getattr(obj, "__class__")'
+        is_safe, issues = CodeValidator.validate(code)
+        assert is_safe is False
+        assert len(issues) > 0
 
-    def test_safe_exec_allows_normal_getattr(self):
-        """测试safe_exec允许正常的属性访问"""
-        executor = CodeExecutor(timeout=5)
-        code = """
-class MyClass:
-    name = "test"
-obj = MyClass()
-name = getattr(obj, "name")
-"""
-        result = executor.safe_exec(code)
-        assert result["success"] is True
-        assert result["globals"]["name"] == "test"
+    def test_code_validator_allows_normal_getattr(self):
+        """测试CodeValidator允许正常的属性访问"""
+        code = 'name = getattr(obj, "name")'
+        is_safe, issues = CodeValidator.validate(code)
+        # getattr 访问普通属性不触发危险模式
+        # 注意：正则 r"getattr\s*\([^)]*,\s*['\"]__" 只拦截 __ 开头的属性
+        assert is_safe is True
 
     def test_detect_vars_function(self):
         """测试检测vars()函数"""

@@ -185,6 +185,7 @@ def render_agent_streaming_status(
     status_html = "<div style='display: flex; gap: 10px; flex-wrap: wrap;'>"
 
     for agent in agents:
+        safe_agent = html_lib.escape(agent)
         if agent in completed:
             # 已完成
             status_html += f"""
@@ -195,7 +196,7 @@ def render_agent_streaming_status(
                 color: #155724;
                 font-weight: bold;
             '>
-                ✅ {agent}
+                ✅ {safe_agent}
             </div>
             """
         elif agent == current_agent:
@@ -209,7 +210,7 @@ def render_agent_streaming_status(
                 font-weight: bold;
                 animation: pulse 1s infinite;
             '>
-                ⏳ {agent}
+                ⏳ {safe_agent}
             </div>
             """
         else:
@@ -221,7 +222,7 @@ def render_agent_streaming_status(
                 background: #e9ecef;
                 color: #6c757d;
             '>
-                ⏸️ {agent}
+                ⏸️ {safe_agent}
             </div>
             """
 
