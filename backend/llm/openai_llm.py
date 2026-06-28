@@ -68,6 +68,8 @@ class OpenAILLM(BaseLLM):
             messages=messages,
             **kwargs,
         )
+        if not response.choices:
+            raise ValueError("OpenAI API returned empty choices")
         content = response.choices[0].message.content or ""
 
         # 追踪Token使用量

@@ -17,6 +17,7 @@ class CodeValidator:
         "os", "subprocess", "sys", "socket", "shutil",
         "pickle", "marshal", "ctypes", "multiprocessing",
         "threading", "signal", "resource", "posix", "nt",
+        "importlib", "runpy", "io", "builtins",
     }
 
     # 危险内置函数
@@ -181,6 +182,7 @@ class CodeExecutor:
 
         使用最小权限原则，仅提供必要的系统路径。
         不传递HOME、USER等敏感环境变量。
+        Windows 平台额外传递 TEMP/TMP/SystemRoot（使用固定安全路径）。
 
         Returns:
             安全的环境变量字典
@@ -188,17 +190,25 @@ class CodeExecutor:
         # 安全的PATH配置：仅包含Python解释器目录
         safe_path = "/usr/bin:/bin" if sys.platform != "win32" else os.path.dirname(sys.executable)
 
-        return {
+        env = {
             "PATH": safe_path,
             "PYTHONPATH": "",  # 禁止导入用户自定义模块
             "PYTHONIOENCODING": "utf-8",
-            # 不传递HOME、TEMP、USER等敏感环境变量
         }
+        # Windows 依赖 TEMP/TMP/SystemRoot，不传会导致子进程创建临时文件失败
+        # 使用固定安全路径，避免泄露宿主用户名等信息
+        if sys.platform == "win32":
+            env["TEMP"] = r"C:\Windows\Temp"
+            env["TMP"] = r"C:\Windows\Temp"
+            env["SystemRoot"] = r"C:\Windows"
+        return env
 
     def safe_exec(self, code: str, allowed_globals: dict = None) -> dict[str, Any]:
         """安全执行代码（使用受限命名空间）
 
-        用于demo等需要执行代码但不使用subprocess的场景。
+        .. deprecated::
+            safe_exec 使用 exec() 实现沙箱，存在逃逸风险。
+            请使用 execute() 方法（subprocess 隔离）替代。
 
         Args:
             code: Python代码字符串
@@ -207,6 +217,13 @@ class CodeExecutor:
         Returns:
             执行结果
         """
+        import warnings
+        warnings.warn(
+            "safe_exec is deprecated and will be removed in a future version. "
+            "Use execute() instead for subprocess-based isolation.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         # 安全验证
         is_safe, issues = CodeValidator.validate(code)
         if not is_safe:

@@ -264,7 +264,7 @@ st.markdown(f"""
 ">
     <span style="color: {THEME_COLORS['accent_magenta']};">🔒</span>
     <span style="color: {THEME_COLORS['text_secondary']};">
-        API Key 将安全存储在系统密钥环中（如果可用），或加密存储在本地配置文件中。
+        API Key 将存储在系统密钥环中（如果可用），或编码存储在本地配置文件中。建议安装 keyring 库获得更好保护。
     </span>
 </div>
 """, unsafe_allow_html=True)

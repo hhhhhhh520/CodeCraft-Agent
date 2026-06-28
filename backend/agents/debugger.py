@@ -58,9 +58,15 @@ class DebuggerAgent(BaseAgent):
         error_message = input_data.get("error_message", "")
 
         # 构建问题描述
-        issues_text = "\n".join(
-            [f"- [{i['severity']}] 行{i.get('line', '?')}: {i['message']}" for i in issues]
-        )
+        def _format_issue(i):
+            if not isinstance(i, dict):
+                return f"- {i}"
+            severity = i.get("severity", "unknown")
+            line_num = i.get("line", "?")
+            message = i.get("message", str(i))
+            return f"- [{severity}] 行{line_num}: {message}"
+
+        issues_text = "\n".join([_format_issue(i) for i in issues])
 
         prompt = f"""请修复以下代码：
 

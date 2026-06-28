@@ -74,6 +74,8 @@ class ClaudeLLM(BaseLLM):
             messages=claude_messages,
         )
 
+        if not response.content:
+            raise ValueError("Claude API returned empty content")
         content = response.content[0].text
 
         # 追踪Token使用量

@@ -5,7 +5,6 @@ from typing import Any, Optional
 
 from .context import SharedContext
 from .errors import ErrorCode, ErrorResult
-from .protocol import AgentMessage, MessageType
 from .state import StateMachine, TaskState
 
 logger = logging.getLogger("codecraft.orchestrator")
@@ -27,7 +26,6 @@ class Orchestrator:
         self.agents = agents
         self.context = context
         self.state_machine = StateMachine()
-        self.message_queue: list[AgentMessage] = []
 
     def process_request(self, user_request: str) -> dict:
         """处理用户请求
@@ -38,6 +36,7 @@ class Orchestrator:
         Returns:
             处理结果
         """
+        self.state_machine.reset()  # 每次请求重置状态机
         logger.info(f"Processing request: {user_request[:50]}...")
 
         # 保存用户请求到上下文
@@ -170,20 +169,6 @@ class Orchestrator:
             ErrorCode.AGENT_NOT_FOUND,
             f"Agent {agent_name} not found",
         ).to_dict()
-
-    def send_message(self, message: AgentMessage) -> Optional[dict]:
-        """发送消息给指定Agent
-
-        Args:
-            message: Agent消息
-
-        Returns:
-            处理结果
-        """
-        if message.receiver in self.agents:
-            agent = self.agents[message.receiver]
-            return agent.receive_message(message)
-        return None
 
     def _handle_feedback_loop(self, result: dict, max_iterations: int = 3) -> dict:
         """处理反馈闭环

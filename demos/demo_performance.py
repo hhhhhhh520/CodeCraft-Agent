@@ -32,32 +32,45 @@ def find_duplicates(arr):
 '''
 
 
-def safe_exec_code(code: str, func_name: str, *args, **kwargs):
-    """安全执行代码并调用指定函数
+def exec_and_call(code: str, func_name: str, *args, **kwargs):
+    """通过 subprocess 执行代码并调用指定函数
 
     Args:
         code: Python代码字符串
-        func_name: 要调用的函数名
+        func_name: 要调用的函数名（仅允许合法标识符）
         *args, **kwargs: 函数参数
 
     Returns:
-        函数执行结果或错误信息
+        函数执行结果或 None
     """
+    import json
+    import re
     executor = CodeExecutor(timeout=30)
 
-    # 使用安全执行方法
-    result = executor.safe_exec(code)
+    # 白名单校验函数名：仅允许合法 Python 标识符
+    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', func_name):
+        print(f"  ⚠️ 非法函数名: {func_name}")
+        return None
+
+    # 构造执行脚本：定义函数 + 调用 + 打印结果
+    call_args = ", ".join(repr(a) for a in args)
+    wrapper = f"""{code}
+
+import json
+result = {func_name}({call_args})
+print(json.dumps(result, default=str))
+"""
+
+    result = executor.execute(wrapper, validate=False)
 
     if not result["success"]:
-        print(f"  ⚠️ 安全执行失败: {result.get('error', 'Unknown error')}")
+        print(f"  ⚠️ 执行失败: {result.get('error', result.get('stderr', 'Unknown error'))}")
         return None
 
-    # 获取函数并执行
-    if func_name in result["globals"]:
-        return result["globals"][func_name](*args, **kwargs)
-    else:
-        print(f"  ⚠️ 函数 {func_name} 未找到")
-        return None
+    try:
+        return json.loads(result["stdout"].strip())
+    except (json.JSONDecodeError, ValueError):
+        return result["stdout"].strip()
 
 
 def demo_performance():
@@ -85,7 +98,7 @@ def demo_performance():
     # 测试原始代码（使用安全执行）
     print("\n⏱️ 性能测试（1500个元素）:")
     start = time.time()
-    result_slow = safe_exec_code(SLOW_CODE, "find_duplicates", test_data)
+    result_slow = exec_and_call(SLOW_CODE, "find_duplicates", test_data)
     time_slow = time.time() - start
 
     if result_slow is not None:
@@ -130,7 +143,7 @@ def demo_performance():
     # 测试优化后代码（使用安全执行）
     print("\n⏱️ 优化后性能测试:")
     start = time.time()
-    result_fast = safe_exec_code(optimized_code, "find_duplicates", test_data)
+    result_fast = exec_and_call(optimized_code, "find_duplicates", test_data)
     time_fast = time.time() - start
 
     if result_fast is not None:

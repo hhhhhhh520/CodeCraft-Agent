@@ -27,10 +27,10 @@ class TestExtractCodeFromResponse:
         assert "def a():" in result
 
     def test_no_code_block(self):
-        """测试无代码块时返回原始响应"""
+        """测试无代码块时返回空字符串"""
         response = "def hello(): pass"
         result = extract_code_from_response(response)
-        assert result == response
+        assert result == ""
 
     def test_empty_response(self):
         """测试空响应"""

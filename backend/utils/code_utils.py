@@ -10,13 +10,13 @@ def extract_code_from_response(response: str) -> str:
     支持多种格式的代码块提取：
     1. ```python ... ```
     2. ``` ... ```
-    3. 无代码块时返回原始响应
+    3. 无代码块时返回空字符串
 
     Args:
         response: LLM响应文本
 
     Returns:
-        提取的代码文本，如无代码块则返回原始响应
+        提取的代码文本，如无代码块则返回空字符串
     """
     if not response:
         return ""
@@ -33,8 +33,8 @@ def extract_code_from_response(response: str) -> str:
     if generic_matches:
         return generic_matches[0].strip()
 
-    # 如果没有代码块，返回原始响应（去除首尾空白）
-    return response.strip()
+    # 如果没有代码块，返回空字符串（避免将自然语言文本当作代码传递）
+    return ""
 
 
 def validate_python_code(code: str) -> tuple[bool, Optional[str]]:

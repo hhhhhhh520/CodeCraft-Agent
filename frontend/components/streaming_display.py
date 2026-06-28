@@ -38,10 +38,11 @@ def render_streaming_code(
         if show_progress:
             elapsed = time.time() - start_time
             speed = char_count / elapsed if elapsed > 0 else 0
+            escaped_code = html_lib.escape(full_code)
             placeholder.markdown(
                 f"""
                 ```{language}
-{full_code}
+{escaped_code}
                 ```
                 <div style="font-size: 12px; color: #888;">
                     📝 生成中... {char_count} 字符 | {speed:.0f} 字符/秒
