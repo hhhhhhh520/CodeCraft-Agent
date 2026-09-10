@@ -70,3 +70,9 @@ pip freeze > requirements.txt
 pip install pip-audit
 pip-audit -r requirements.txt
 ```
+
+---
+
+## ⚠️ 后续状态（2026-04-22 更新）
+
+本 issue 的解决方式（`requirements.txt` 精确锁定版本）已被后续决定取代：见 `issues/ISSUE-001-依赖版本漂移问题.md`（2026-04-22），为解决独立虚拟环境下的依赖冲突，该记录决定"放宽其他依赖版本范围"。现行 `requirements.txt` 核心依赖已全部使用 `>=` 版本范围（文件头注释为"版本范围放宽，避免冲突"，numpy 另加上限 `<2.0.0`），未采用精确锁定。

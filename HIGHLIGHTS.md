@@ -19,14 +19,18 @@
 - **StateMachine**: 8状态有限状态机，确保任务流转可控
 - **SharedContext**: Agent间共享上下文，支持状态传递
 
-**Agent通信协议**:
+**Agent间通信**（SharedContext，`core/context.py`）:
 ```python
-class AgentMessage:
-    sender: str          # 发送者
-    receiver: str        # 接收者
-    message_type: MessageType  # TASK_ASSIGN / RESULT_RETURN / FEEDBACK
-    content: dict        # 消息内容
-    timestamp: datetime  # 时间戳
+class SharedContext:
+    """共享上下文，使用RLock确保线程安全"""
+    def __init__(self) -> None:
+        self.task_id: str = str(uuid.uuid4())
+        self.data: dict[str, Any] = {}
+        self._lock = threading.RLock()  # 可重入锁，确保线程安全
+
+    def set(self, key: str, value: Any) -> None: ...
+    def get(self, key: str, default: Optional[Any] = None) -> Optional[Any]: ...
+    def update(self, data: dict[str, Any]) -> None: ...
 ```
 
 **为什么这样设计**:
@@ -298,4 +302,4 @@ class ShortTermMemory:
 
 ---
 
-*文档版本: 1.0 | 更新时间: 2026-04-12*
+*文档版本: 1.1 | 更新时间: 2026-09-06*
