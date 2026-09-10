@@ -89,21 +89,12 @@ if generate_btn and requirement:
 
     # 导入后端模块
     try:
-        from backend.core import Orchestrator, SharedContext, Memory
-        from backend.llm import LLMFactory, TokenManager
-        from backend.tools import ASTParser, CodeExecutor
-        from backend.agents import (
-            CodeGeneratorAgent,
-            CodeReviewerAgent,
-            DebuggerAgent,
-            TestGeneratorAgent,
-        )
+        from backend.core.factory import create_orchestrator
     except ImportError as e:
         st.error(f"❌ 导入后端模块失败: {e}")
         st.stop()
 
-    # 创建LLM
-    api_key = config["api_key"]
+    # 装配 Orchestrator（LLM/工具/Agent 由工厂统一创建）
     api_type = config.get("api_type", "deepseek")
 
     if api_type == "deepseek":
@@ -114,32 +105,17 @@ if generate_btn and requirement:
         model = config.get("model", "gpt-4o-mini")
 
     try:
-        token_manager = TokenManager(max_tokens=128000)
-        llm = LLMFactory.create("openai", model, api_key=api_key, base_url=base_url, token_manager=token_manager)
+        orchestrator = create_orchestrator(
+            api_key=config["api_key"],
+            model=model,
+            base_url=base_url,
+            fast=bool(config.get("fast_mode", False)),
+        )
     except Exception as e:
         st.error(f"❌ 创建LLM失败: {e}")
         st.stop()
 
-    # 创建工具
-    tools = [ASTParser(), CodeExecutor(timeout=30)]
-
-    # 创建记忆系统
-    memory = Memory(enable_vector=True)
-
-    # 创建Agents
-    generator = CodeGeneratorAgent(llm=llm, tools=tools, memory=memory)
-    agents = {"generator": generator}
-
-    if not config.get("fast_mode", False):
-        reviewer = CodeReviewerAgent(llm=llm, tools=tools, memory=memory)
-        debugger = DebuggerAgent(llm=llm, tools=tools, memory=memory)
-        test_generator = TestGeneratorAgent(llm=llm, tools=tools, memory=memory)
-        agents["reviewer"] = reviewer
-        agents["debugger"] = debugger
-        agents["test_generator"] = test_generator
-
-    context = SharedContext()
-    orchestrator = Orchestrator(agents=agents, context=context)
+    agents = orchestrator.agents
 
     completed_agents = []
 

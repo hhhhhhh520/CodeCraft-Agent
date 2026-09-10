@@ -1,6 +1,6 @@
 # CodeCraft Agent 项目进度
 
-> 最后更新: 2026-06-28
+> 最后更新: 2026-09-10
 
 ---
 
@@ -290,6 +290,15 @@ python -m cli.main chat
 # 查看版本
 python -m cli.main version
 ```
+
+---
+
+## 修改历史
+
+### 2026-09-10 移除未集成的记忆系统，统一装配工厂
+**修改文件**: backend/core/memory.py、backend/core/vector_memory.py、demos/、tests/test_memory.py、tests/test_vector_memory.py（删除）；backend/core/factory.py、tests/test_factory.py（新增）；backend/core/agent.py、backend/core/__init__.py、backend/agents/*.py、cli/main.py、frontend/pages/chat.py、tests/test_integration.py、requirements.txt、requirements.in、pyproject.toml（修改）
+**修改内容**: 删除实现后从未被主流程调用的 Memory/VectorMemory 子系统与 BaseAgent.receive_message 死接口，移除 langchain/chromadb/numpy 冗余依赖；新增 create_orchestrator() 工厂消除 CLI 与 Streamlit 重复装配；新增 tests/test_factory.py 3个针对性测试
+**修改原因**: 2026-09-10 架构普查确认"设计了但未集成"（Memory 零调用、依赖零引用、双入口重复组装），按删除路线收敛
 
 ---
 

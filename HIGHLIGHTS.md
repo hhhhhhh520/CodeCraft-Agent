@@ -160,24 +160,9 @@ def create_llm(provider: str, model: str) -> BaseLLM:
 
 ---
 
-### 6. 记忆系统
+### 6. 记忆系统（已移除）
 
-**短期记忆** (`core/memory.py`):
-```python
-class ShortTermMemory:
-    def __init__(self, max_items: int = 100):
-        self.items: list[dict] = []
-        self.max_items = max_items
-
-    def add(self, item: dict) -> None: ...
-    def get_recent(self, n: int = 10) -> list[dict]: ...
-    def search(self, query: str) -> list[dict]: ...
-```
-
-**向量记忆** (计划中):
-- ChromaDB语义检索
-- 历史代码相似度匹配
-- 上下文增强生成
+> 2026-09-10 清理：短期/向量记忆模块（`core/memory.py`、`core/vector_memory.py`）实现后从未被主流程调用，已整体移除。若未来需要记忆能力，必须连同写入路径一起设计，避免再次出现"实现了但不接线"。
 
 ---
 
@@ -185,8 +170,8 @@ class ShortTermMemory:
 
 | 指标 | 数值 |
 |------|------|
-| 测试覆盖率 | 81% |
-| 测试数量 | 67个 |
+| 测试覆盖率 | 81%（移除记忆模块前口径） |
+| 测试数量 | 116个（2026-09-10，移除17个记忆测试后） |
 | 代码行数 | ~3000行 |
 | 模块化程度 | 高 |
 | 类型注解覆盖 | 100% |
@@ -210,7 +195,6 @@ class ShortTermMemory:
 
 ### LLM应用开发
 - Prompt Engineering
-- LangChain框架应用
 - 多模型适配
 - Token管理优化
 
@@ -286,7 +270,6 @@ class ShortTermMemory:
 ## 未来规划
 
 ### 短期（1-2周）
-- [ ] ChromaDB向量记忆
 - [ ] 流式输出UI
 - [ ] 在线Demo部署
 

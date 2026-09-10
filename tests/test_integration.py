@@ -66,7 +66,6 @@ class TestFullMultiAgentIntegration:
     @patch("backend.llm.openai_llm.OpenAI")
     def test_full_multi_agent_workflow(self, mock_openai_class):
         """测试完整多Agent工作流"""
-        from backend.core import Memory
         from backend.agents import (
             CodeGeneratorAgent,
             CodeReviewerAgent,

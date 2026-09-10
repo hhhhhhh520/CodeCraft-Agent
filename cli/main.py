@@ -8,22 +8,15 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-from typing import Any
 
 import typer
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from backend.core import Orchestrator, SharedContext, Memory
-from backend.llm import LLMFactory, TokenManager
-from backend.tools import ASTParser, CodeExecutor
-from backend.agents import (
-    CodeGeneratorAgent,
-    CodeReviewerAgent,
-    DebuggerAgent,
-    TestGeneratorAgent,
-)
+from backend.core import Orchestrator
+from backend.core.factory import create_orchestrator
+from backend.llm import TokenManager
 
 app = typer.Typer(
     name="codecraft",
@@ -68,32 +61,13 @@ def get_orchestrator(fast: bool = False) -> Orchestrator:
         model = "gpt-4o-mini"
         console.print("[dim]使用 OpenAI API[/dim]")
 
-    # 创建LLM（集成 TokenManager）
-    token_manager = get_token_manager()
-    llm = LLMFactory.create("openai", model, api_key=api_key, base_url=base_url, token_manager=token_manager)
-
-    # 创建工具
-    tools: list[Any] = [ASTParser(), CodeExecutor(timeout=30)]
-
-    # 创建记忆系统
-    memory = Memory(enable_vector=True)
-
-    # 创建所有Agent（注入 tools 和 memory）
-    generator = CodeGeneratorAgent(llm=llm, tools=tools, memory=memory)
-    agents: dict[str, Any] = {"generator": generator}
-
-    if not fast:
-        reviewer = CodeReviewerAgent(llm=llm, tools=tools, memory=memory)
-        debugger = DebuggerAgent(llm=llm, tools=tools, memory=memory)
-        test_generator = TestGeneratorAgent(llm=llm, tools=tools, memory=memory)
-        agents["reviewer"] = reviewer
-        agents["debugger"] = debugger
-        agents["test_generator"] = test_generator
-
-    # 创建Orchestrator
-    context = SharedContext()
-
-    return Orchestrator(agents=agents, context=context)
+    return create_orchestrator(
+        api_key=api_key,
+        model=model,
+        base_url=base_url,
+        fast=fast,
+        token_manager=get_token_manager(),
+    )
 
 
 @app.command()

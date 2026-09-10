@@ -3,7 +3,7 @@
 import json
 import logging
 import re
-from typing import Any, Optional
+from typing import Any
 
 from backend.core.agent import BaseAgent
 
@@ -43,15 +43,14 @@ class CodeReviewerAgent(BaseAgent):
 
 只返回JSON，不要其他内容。"""
 
-    def __init__(self, llm: Any, tools: list[Any], memory: Optional[Any] = None) -> None:
+    def __init__(self, llm: Any, tools: list[Any]) -> None:
         """初始化代码审查Agent
 
         Args:
             llm: LLM实例
             tools: 工具列表
-            memory: 记忆系统实例
         """
-        super().__init__(name="reviewer", llm=llm, tools=tools, memory=memory)
+        super().__init__(name="reviewer", llm=llm, tools=tools)
 
     def process(self, input_data: dict, context: dict) -> dict:
         """处理代码审查请求

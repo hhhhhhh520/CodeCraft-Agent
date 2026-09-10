@@ -19,8 +19,7 @@
 | 🔄 反馈闭环 | 审查不通过自动修复，最多3次迭代 |
 | 📊 状态机管理 | 8状态有限状态机，确保任务流转可控 |
 | 🔌 多模型支持 | OpenAI / Claude / DeepSeek 可切换 |
-| 🧠 向量记忆 | ChromaDB语义检索历史代码 |
-| ✅ 高测试覆盖 | 130个测试用例 |
+| ✅ 高测试覆盖 | 116个测试用例 |
 
 ## 功能特性
 
@@ -39,8 +38,7 @@
 | LLM API | OpenAI / Claude / DeepSeek（tenacity重试） |
 | CLI框架 | Typer + Rich |
 | Web框架 | Streamlit |
-| 向量存储 | ChromaDB |
-| 测试框架 | Pytest (130个测试) |
+| 测试框架 | Pytest (116个测试) |
 
 ## 项目结构
 

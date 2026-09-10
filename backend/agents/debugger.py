@@ -1,6 +1,6 @@
 """调试Agent模块"""
 
-from typing import Any, Optional
+from typing import Any
 
 from backend.core.agent import BaseAgent
 from backend.tools.executor import CodeValidator
@@ -31,16 +31,15 @@ class DebuggerAgent(BaseAgent):
 
 直接输出修复后的代码，使用```python代码块包裹。"""
 
-    def __init__(self, llm: Any, tools: list[Any], memory: Optional[Any] = None, strict_security: bool = True) -> None:
+    def __init__(self, llm: Any, tools: list[Any], strict_security: bool = True) -> None:
         """初始化调试Agent
 
         Args:
             llm: LLM实例
             tools: 工具列表
-            memory: 记忆系统实例
             strict_security: 是否启用严格安全验证
         """
-        super().__init__(name="debugger", llm=llm, tools=tools, memory=memory)
+        super().__init__(name="debugger", llm=llm, tools=tools)
         self.strict_security = strict_security
 
     def process(self, input_data: dict, context: dict) -> dict:

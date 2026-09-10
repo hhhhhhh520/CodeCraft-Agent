@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import Any, Optional
+from typing import Any
 
 from backend.core.agent import BaseAgent
 from backend.utils.code_utils import extract_code_from_response
@@ -25,15 +25,14 @@ class TestGeneratorAgent(BaseAgent):
 
 使用pytest框架，直接输出测试代码，使用```python代码块包裹。"""
 
-    def __init__(self, llm: Any, tools: list[Any], memory: Optional[Any] = None) -> None:
+    def __init__(self, llm: Any, tools: list[Any]) -> None:
         """初始化测试生成Agent
 
         Args:
             llm: LLM实例
             tools: 工具列表
-            memory: 记忆系统实例
         """
-        super().__init__(name="test_generator", llm=llm, tools=tools, memory=memory)
+        super().__init__(name="test_generator", llm=llm, tools=tools)
 
     def process(self, input_data: dict, context: dict) -> dict:
         """处理测试生成请求
