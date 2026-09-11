@@ -1,8 +1,8 @@
 # CodeCraft Agent 项目进度
 
-> 最后更新: 2026-09-10
+> 最后更新: 2026-09-11
 >
-> **当前状态（2026-09-10 实测）**: 116 个测试全部通过（`pytest -q`，约 4 秒）；`backend/` 覆盖率约 **74%**（`pytest --cov=backend`；cli/ 与 frontend/ 无自动化测试，未纳入）。
+> **当前状态（2026-09-11 实测）**: 118 个测试全部通过（`pytest -q`，约 4 秒）；`backend/` 覆盖率约 **74%**（`pytest --cov=backend`；cli/ 与 frontend/ 无自动化测试，未纳入）。
 
 ---
 
@@ -295,6 +295,11 @@ python -m cli.main version
 ---
 
 ## 修改历史
+
+### 2026-09-11 修复沙箱子进程中文输出的解码错误
+**修改文件**: backend/tools/executor.py、tests/test_executor.py（新增 2 个测试，116 → 118）
+**修改内容**: `subprocess.run` 增加 `encoding="utf-8"` + `errors="backslashreplace"`。此前子进程被 `_get_safe_env()` 的 `PYTHONIOENCODING=utf-8` 强制为 UTF-8 输出，父进程却按 Windows 默认 GBK 解码——中文输出变乱码（如 '鎺掑簭瀹屾垚'），部分字节序列触发 `UnicodeDecodeError` 使 reader 线程崩溃、stdout/stderr 整体丢失
+**修改原因**: 2026-09-11 用讯飞 spark-x2.5-4b 端到端实测时 `test_passed=False` 且失败原因不可见；最小复现定位为父子进程编码不匹配（同一份输出，英文正常、中文乱码/丢流）
 
 ### 2026-09-10 移除未集成的记忆系统，统一装配工厂
 **修改文件**: backend/core/memory.py、backend/core/vector_memory.py、demos/、tests/test_memory.py、tests/test_vector_memory.py（删除）；backend/core/factory.py、tests/test_factory.py（新增）；backend/core/agent.py、backend/core/__init__.py、backend/agents/*.py、cli/main.py、frontend/pages/chat.py、tests/test_integration.py、requirements.txt、requirements.in、pyproject.toml（修改）

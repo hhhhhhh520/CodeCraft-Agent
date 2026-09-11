@@ -15,7 +15,7 @@
 | `demos/`（4 个演示脚本 + 运行脚本 + 演示指南） | 2026-09-10 | 引用已删的记忆模块 |
 | 依赖 `langchain` / `langchain-openai` / `langchain-anthropic` / `chromadb` / `numpy` | 2026-09-10 | 代码中从未 import |
 
-**当前状态**（116 个测试全部通过、backend 覆盖率约 74%）请以 [PROGRESS.md](PROGRESS.md)、[README.md](README.md) 为准。
+**当前状态**（118 个测试全部通过、backend 覆盖率约 74%）请以 [PROGRESS.md](PROGRESS.md)、[README.md](README.md) 为准。
 
 > 分析日期: 2026-04-15
 > 项目版本: v0.2.0
@@ -60,7 +60,7 @@
 | **多模型支持** | OpenAI、Claude、DeepSeek 可切换（DeepSeek 经 base_url 复用 OpenAI 兼容接口） |
 | ~~**向量记忆**~~ | ⚠️ ~~ChromaDB语义检索历史代码~~（2026-09-10 已移除） |
 | **双入口** | CLI (Typer) + Web (Streamlit) |
-| **高测试覆盖** | 80个测试用例（快照口径；当前 116 个） |
+| **高测试覆盖** | 80个测试用例（快照口径；当前 118 个） |
 
 ### 1.3 项目规模
 
@@ -1637,7 +1637,7 @@ def version() -> None:
 
 **总计（2026-04 快照）**: 80个测试用例。
 
-**当前**: 116 个测试全部通过（`pytest -q`，约 4 秒）。相对快照的 80 个，中间经历了两轮变动：2026-06-28 删 5 个协议用例、2026-09-10 删 17 个记忆用例（`test_memory.py` 4 个 + `test_vector_memory.py` 13 个），期间 Phase 7/8 新增了 `test_errors.py`、`test_code_utils.py`、安全攻击向量用例，2026-09-10 又新增 `test_factory.py`（3 个）。
+**当前**: 116 个测试全部通过（`pytest -q`，约 4 秒）。相对快照的 80 个，中间经历了两轮变动：2026-06-28 删 5 个协议用例、2026-09-10 删 17 个记忆用例（`test_memory.py` 4 个 + `test_vector_memory.py` 13 个），期间 Phase 7/8 新增了 `test_errors.py`、`test_code_utils.py`、安全攻击向量用例，2026-09-10 又新增 `test_factory.py`（3 个），2026-09-11 新增 2 个沙箱编码回归测试（116 → 118）。
 
 ### 11.2 测试示例
 
@@ -1911,7 +1911,7 @@ class BaseAgent(ABC):
 | **状态机管理** | 8状态有限状态机，确保任务流转可控 | `StateMachine`类 |
 | **多模型支持** | OpenAI / Claude / DeepSeek 可切换 | `LLMFactory`工厂模式 |
 | ~~向量记忆~~ | ⚠️ 已移除（2026-09-10） | - |
-| **高测试覆盖** | 116个测试用例，全部通过 | pytest + pytest-cov |
+| **高测试覆盖** | 118个测试用例，全部通过 | pytest + pytest-cov |
 | **完整集成** | CLI 与 Web 共用同一装配入口 | `create_orchestrator()`（tools/token_manager 注入） |
 
 ### 14.2 技术创新点
@@ -1933,7 +1933,7 @@ class BaseAgent(ABC):
 | 状态管理 | 8状态FSM | 无 | 简单状态 |
 | 反馈闭环 | ✅ 多轮审查修复 | ❌ | ❌ |
 | 多模型支持 | OpenAI/Claude/DeepSeek | 仅OpenAI | 仅OpenAI |
-| 测试覆盖 | 116个测试全部通过 | 低 | 低 |
+| 测试覆盖 | 118个测试全部通过 | 低 | 低 |
 | Web UI | Streamlit | 无 | 无 |
 | 向量记忆 | 无（曾实现后移除） | Pinecone | ChromaDB |
 | Token追踪 | ✅ 集成 | ❌ | ❌ |
@@ -2004,7 +2004,7 @@ class BaseAgent(ABC):
 ### 15.3 简历写法建议
 
 **简洁版**:
-> 设计并实现多Agent协作的Python代码生成系统，采用Orchestrator模式协调4个专业Agent（生成、审查、调试、测试），通过8状态有限状态机管理任务流转，实现了代码生成-审查-修复-测试的自动化闭环。支持OpenAI/Claude多模型切换，116个测试全部通过。
+> 设计并实现多Agent协作的Python代码生成系统，采用Orchestrator模式协调4个专业Agent（生成、审查、调试、测试），通过8状态有限状态机管理任务流转，实现了代码生成-审查-修复-测试的自动化闭环。支持OpenAI/Claude多模型切换，118个测试全部通过。
 
 **详细版**:
 > **CodeCraft Agent** - 多Agent协作代码生成系统
@@ -2013,7 +2013,7 @@ class BaseAgent(ABC):
 > - 构建反馈闭环机制，审查不通过自动修复，最多3次迭代
 > - 设计LLM抽象层，支持OpenAI/Claude多模型切换
 > - 实现AST解析器、沙箱执行器、Token管理器等工具链
-> - 编写116个测试用例，backend 覆盖率约74%
+> - 编写118个测试用例，backend 覆盖率约74%
 
 ---
 

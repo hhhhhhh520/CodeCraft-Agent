@@ -171,7 +171,7 @@ def create_llm(provider: str, model: str) -> BaseLLM:
 | 指标 | 数值 |
 |------|------|
 | 测试覆盖率 | backend 约 **74%**（2026-09-10 实测 `pytest --cov=backend`；cli/frontend 无自动化测试，未纳入） |
-| 测试数量 | **116 个**（2026-09-10；删 17 个记忆测试 + 增 3 个工厂测试后，130 → 116） |
+| 测试数量 | **118 个**（2026-09-10：删 17 个记忆测试 + 增 3 个工厂测试，130 → 116；2026-09-11：新增 2 个沙箱编码回归测试，116 → 118） |
 | 代码行数 | 约 **6500 行**（backend + cli + frontend + tests） |
 | 模块化程度 | 高 |
 | 类型注解 | backend 覆盖全部公开接口；已配置 mypy（strict），`mypy backend/` 尚有 **29 处**告警（按规则：`type-arg` 泛型缺参 9、`union-attr` 7、`arg-type` 6、`no-any-return` 5 等），对 backend+cli+frontend 全量为 **92 处** |
@@ -262,7 +262,7 @@ def create_llm(provider: str, model: str) -> BaseLLM:
 | 状态管理 | 状态机 | 无 | 简单状态 |
 | 反馈闭环 | ✅ 多轮审查修复 | ❌ | ❌ |
 | 多模型支持 | ✅ OpenAI/Claude | 仅OpenAI | 仅OpenAI |
-| 测试覆盖 | backend 74%（116个测试） | 低 | 低 |
+| 测试覆盖 | backend 74%（118个测试） | 低 | 低 |
 | 学习曲线 | 低 | 中 | 中 |
 
 ---

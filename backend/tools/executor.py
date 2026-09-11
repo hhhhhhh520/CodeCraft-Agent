@@ -159,6 +159,10 @@ class CodeExecutor:
                     [sys.executable, temp_file],
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",   # 子进程被 PYTHONIOENCODING=utf-8 强制为 UTF-8，
+                    # 父进程若按 Windows 默认 GBK 解码会乱码甚至 UnicodeDecodeError；
+                    # backslashreplace 保留非法字节为 \xNN（replace 会不可逆吞掉，丢取证信息）
+                    errors="backslashreplace",
                     timeout=self.timeout,
                     env=self._get_safe_env(),
                     cwd=tmpdir,  # 限制工作目录为临时目录

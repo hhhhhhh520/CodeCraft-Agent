@@ -1,7 +1,7 @@
 # CodeCraft Agent
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Tests](https://img.shields.io/badge/Tests-116%20passed-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-118%20passed-brightgreen)
 ![Coverage](https://img.shields.io/badge/Coverage-74%25%20(backend)-green)
 ![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-orange)
 
@@ -19,7 +19,7 @@
 | 🔄 反馈闭环 | 审查不通过自动修复，最多3次迭代 |
 | 📊 状态机管理 | 8状态有限状态机，确保任务流转可控 |
 | 🔌 多模型支持 | OpenAI / Claude / DeepSeek 可切换 |
-| ✅ 高测试覆盖 | 116个测试用例 |
+| ✅ 高测试覆盖 | 118个测试用例 |
 
 ## 功能特性
 
@@ -38,7 +38,7 @@
 | LLM API | OpenAI / Claude / DeepSeek（tenacity重试） |
 | CLI框架 | Typer + Rich |
 | Web框架 | Streamlit |
-| 测试框架 | Pytest (116个测试) |
+| 测试框架 | Pytest (118个测试) |
 
 ## 项目结构
 
@@ -241,7 +241,7 @@ stateDiagram-v2
 ### 运行测试
 
 ```bash
-# 运行所有测试（116 个）
+# 运行所有测试（118 个）
 pytest tests/ -v
 
 # 带覆盖率（backend 约 74%；cli/ 与 frontend/ 目前无自动化测试，未纳入统计）
