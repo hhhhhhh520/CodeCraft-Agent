@@ -1,6 +1,8 @@
 # CodeCraft Agent 项目进度
 
 > 最后更新: 2026-09-10
+>
+> **当前状态（2026-09-10 实测）**: 116 个测试全部通过（`pytest -q`，约 4 秒）；`backend/` 覆盖率约 **74%**（`pytest --cov=backend`；cli/ 与 frontend/ 无自动化测试，未纳入）。
 
 ---
 
@@ -95,7 +97,7 @@
 - `README.md` - 添加徽章、项目亮点表格、3个Mermaid架构图、文档链接
 - `docs/assets/architecture.md` - 5个详细架构图文档
 - `HIGHLIGHTS.md` - 技术亮点文档
-- `INTERVIEW_GUIDE.md` - 面试话术文档
+- `INTERVIEW_GUIDE.md` - 面试话术文档（本地文件，已在 `.gitignore` 中，未纳入版本库）
 - `demos/` - 4个演示脚本 + 运行脚本 + 演示指南（已于 2026-09-10 移除）
 - `frontend/components/streaming_display.py` - 流式显示组件
 - `frontend/pages/chat.py` - 集成流式输出
@@ -265,7 +267,8 @@ codecraft-agent/
     ├── test_integration.py     ✅
     ├── test_security.py        ✅
     ├── test_errors.py          ✅
-    └── test_code_utils.py      ✅
+    ├── test_code_utils.py      ✅
+    └── test_factory.py         ✅ 装配工厂测试（2026-09-10 新增）
 ```
 
 ---

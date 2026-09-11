@@ -3,6 +3,7 @@
 > 创建时间: 2026-06-27
 > 用途: 逐项验证项目所有设计功能的实际运行结果
 > 测试方式: CLI / Web UI / Python 直接调用
+> 复核: 2026-09-10 —— 已清理指向已删除代码的条目（通信协议/记忆系统/safe_exec/send_message），其余条目本次未逐项重跑
 
 ---
 
@@ -231,62 +232,9 @@
 
 ---
 
-## 二、通信协议（Protocol）
+## 二、通信协议（Protocol）—— 已废弃
 
-### PT-01: AgentMessage 创建
-- **前置条件**: 无
-- **操作步骤**:
-  ```python
-  from backend.core.protocol import AgentMessage, MessageType
-  msg = AgentMessage(
-      sender="generator",
-      receiver="reviewer",
-      msg_type=MessageType.TASK_ASSIGN,
-      payload={"code": "def hello(): pass"}
-  )
-  print(f"sender: {msg.sender}")
-  print(f"receiver: {msg.receiver}")
-  print(f"msg_type: {msg.msg_type.value}")
-  print(f"payload: {msg.payload}")
-  print(f"correlation_id 存在: {bool(msg.correlation_id)}")
-  print(f"timestamp 存在: {msg.timestamp > 0}")
-  ```
-- **预期结果**:
-  ```
-  sender: generator
-  receiver: reviewer
-  msg_type: task_assign
-  payload: {'code': 'def hello(): pass'}
-  correlation_id 存在: True
-  timestamp 存在: True
-  ```
-- **判定标准**: 所有字段正确填充，correlation_id 和 timestamp 自动生成
-
-### PT-02: to_dict/from_dict 序列化往返
-- **前置条件**: 无
-- **操作步骤**:
-  ```python
-  from backend.core.protocol import AgentMessage, MessageType
-  msg = AgentMessage(
-      sender="a", receiver="b",
-      msg_type=MessageType.FEEDBACK,
-      payload={"score": 85}
-  )
-  d = msg.to_dict()
-  msg2 = AgentMessage.from_dict(d)
-  print(f"原始: {msg.sender}/{msg.receiver}/{msg.msg_type.value}")
-  printf"还原: {msg2.sender}/{msg2.receiver}/{msg2.msg_type.value}")
-  print(f"payload一致: {msg.payload == msg2.payload}")
-  print(f"id一致: {msg.correlation_id == msg2.correlation_id}")
-  ```
-- **预期结果**:
-  ```
-  原始: a/b/feedback
-  还原: a/b/feedback
-  payload一致: True
-  id一致: True
-  ```
-- **判定标准**: 序列化→反序列化后所有字段一致
+> ⚠️ **整章失效（2026-09-10 标注）**：`backend/core/protocol.py`（`AgentMessage` / `MessageType`）自始至终没有被主流程调用，已于 2026-06-28 作为死代码删除，`tests/test_protocol.py`（5 个用例）同步移除。原 PT-01 / PT-02 已删除，**不要再去执行**——`from backend.core.protocol import ...` 现在会直接抛 `ModuleNotFoundError`。
 
 ---
 
@@ -889,115 +837,15 @@
   ```
 - **判定标准**: 最多 3 轮迭代，之后状态为 FAILED
 
-### OR-08: send_message
-- **前置条件**: Mock Agent
-- **操作步骤**:
-  ```python
-  from unittest.mock import Mock
-  from backend.core.orchestrator import Orchestrator
-  from backend.core.context import SharedContext
-  from backend.core.protocol import AgentMessage, MessageType
-  agent = Mock(); agent.receive_message.return_value = {"status": "ok"}
-  orch = Orchestrator(agents={"test_agent": agent}, context=SharedContext())
-  msg = AgentMessage(sender="a", receiver="test_agent", msg_type=MessageType.TASK_ASSIGN, payload={})
-  result = orch.send_message(msg)
-  print(f"agent收到消息: {agent.receive_message.called}")
-  print(f"返回结果: {result}")
-  ```
-- **预期结果**:
-  ```
-  agent收到消息: True
-  返回结果: {'status': 'ok'}
-  ```
-- **判定标准**: 消息被正确传递给目标 Agent
+### OR-08: send_message —— 已废弃
+
+> ⚠️ **本条目已失效（2026-09-10 标注）**：`Orchestrator.send_message()` 与 `BaseAgent.receive_message()` 依赖已删除的 `protocol.py`，且实现后无任何调用点，已随两轮清理移除。保留仅作历史记录，**不要执行**。
 
 ---
 
-## 九、记忆系统
+## 九、记忆系统 —— 已废弃
 
-### MM-01: ShortTermMemory 容量限制
-- **前置条件**: 无
-- **操作步骤**:
-  ```python
-  from backend.core.memory import ShortTermMemory
-  mem = ShortTermMemory(max_items=3)
-  mem.add("k1", "v1")
-  mem.add("k2", "v2")
-  mem.add("k3", "v3")
-  mem.add("k4", "v4")  # 超出容量
-  print(f"items数量: {len(mem.items)}")
-  print(f"最早的key: {mem.items[0]['key']}")
-  print(f"最新的key: {mem.items[-1]['key']}")
-  ```
-- **预期结果**:
-  ```
-  items数量: 3
-  最早的key: k2
-  最新的key: k4
-  ```
-- **判定标准**: 超出容量时最早的被移除
-
-### MM-02: Memory 三种记忆类型
-- **前置条件**: 无（向量记忆不可用时跳过 vector 部分）
-- **操作步骤**:
-  ```python
-  from backend.core.memory import Memory
-  mem = Memory(enable_vector=False)
-  mem.add("short_key", "short_value", memory_type="short")
-  mem.add("long_key", "long_value", memory_type="long")
-  print(f"短期记忆: {mem.short_term.items[0]['key']}")
-  print(f"长期记忆: {'long_key' in mem.long_term}")
-  print(f"向量启用: {mem.is_vector_enabled}")
-  ```
-- **预期结果**:
-  ```
-  短期记忆: short_key
-  长期记忆: True
-  向量启用: False
-  ```
-- **判定标准**: 三种记忆类型各自独立存储
-
-### MM-03: Memory clear
-- **前置条件**: 无
-- **操作步骤**:
-  ```python
-  from backend.core.memory import Memory
-  mem = Memory(enable_vector=False)
-  mem.add("k1", "v1")
-  mem.add("k2", "v2", memory_type="long")
-  mem.clear()
-  print(f"短期清空: {len(mem.short_term.items) == 0}")
-  print(f"长期清空: {len(mem.long_term) == 0}")
-  ```
-- **预期结果**:
-  ```
-  短期清空: True
-  长期清空: True
-  ```
-- **判定标准**: clear 后短期和长期记忆都为空
-
-### MM-04: HybridMemory 向后兼容
-- **前置条件**: 无
-- **操作步骤**:
-  ```python
-  from backend.core.vector_memory import HybridMemory
-  mem = HybridMemory(enable_vector=False)
-  print(f"类型: {type(mem).__name__}")
-  mem.add("k1", "v1")
-  print(f"add成功: {len(mem.short_term.items) == 1}")
-  results = mem.search("test", k=1)
-  print(f"search返回: {isinstance(results, list)}")
-  mem.clear()
-  print(f"clear成功: {len(mem.short_term.items) == 0}")
-  ```
-- **预期结果**:
-  ```
-  类型: Memory
-  add成功: True
-  search返回: True
-  clear成功: True
-  ```
-- **判定标准**: HybridMemory 返回 Memory 实例，add/search/clear 方法可用
+> ⚠️ **整章失效（2026-09-10 标注）**：`backend/core/memory.py`、`backend/core/vector_memory.py` 实现后从未被主流程调用（全仓零调用点），已于 2026-09-10 连同 `tests/test_memory.py`、`tests/test_vector_memory.py` 一起删除。原 MM-01 ~ MM-04 已删除，**不要再去执行**——对应导入均已失效。
 
 ---
 
@@ -1248,45 +1096,9 @@ def standalone(y):
   ```
 - **判定标准**: 只有 PATH/PYTHONPATH/PYTHONIOENCODING，不含敏感变量
 
-### EX-04: safe_exec 类定义
-- **前置条件**: 无
-- **操作步骤**:
-  ```python
-  from backend.tools.executor import CodeExecutor
-  executor = CodeExecutor(timeout=5)
-  code = '''
-class MyClass:
-    name = "test"
-obj = MyClass()
-result = obj.name
-'''
-  result = executor.safe_exec(code)
-  print(f"success: {result['success']}")
-  print(f"result: {result['globals']['result']}")
-  ```
-- **预期结果**:
-  ```
-  success: True
-  result: test
-  ```
-- **判定标准**: 类定义和实例化成功
+### EX-04 / EX-05: safe_exec —— 已废弃
 
-### EX-05: safe_exec allowed_globals
-- **前置条件**: 无
-- **操作步骤**:
-  ```python
-  from backend.tools.executor import CodeExecutor
-  executor = CodeExecutor(timeout=5)
-  result = executor.safe_exec("result = my_var * 2", allowed_globals={"my_var": 21})
-  print(f"success: {result['success']}")
-  print(f"result: {result['globals']['result']}")
-  ```
-- **预期结果**:
-  ```
-  success: True
-  result: 42
-  ```
-- **判定标准**: allowed_globals 中的变量在执行时可用
+> ⚠️ **本条目已失效（2026-09-10 标注）**：`CodeExecutor.safe_exec()`（基于 `exec()` 的沙箱）已在 Phase 8 安全整改中**完全移除**，统一改用 `subprocess` 的 `execute()` 执行，以消除 exec 逃逸面。原 EX-04 / EX-05 已删除，**不要再去执行**。
 
 ---
 
@@ -1461,46 +1273,39 @@ result = obj.name
   ```
 - **判定标准**: 链式属性访问被检测
 
-### SEC-03: safe_getattr 阻止 dunder
+### SEC-03: CodeValidator 拦截 dunder 属性访问
 - **前置条件**: 无
 - **操作步骤**:
   ```python
-  from backend.tools.executor import CodeExecutor
-  executor = CodeExecutor(timeout=5)
-  code = 'obj = "test"\ncls = getattr(obj, "__class__")'
-  result = executor.safe_exec(code)
-  print(f"success: {result['success']}")
-  print(f"error含不允许: {'不允许' in result.get('error', '')}")
+  from backend.tools.executor import CodeValidator
+  code = 'cls = getattr(obj, "__class__")'
+  is_safe, issues = CodeValidator.validate(code)
+  print(f"is_safe: {is_safe}")
+  print(f"issues数量: {len(issues)}")
   ```
 - **预期结果**:
   ```
-  success: False
-  error含不允许: True
+  is_safe: False
+  issues数量: >0
   ```
-- **判定标准**: 访问 __class__ 被 safe_getattr 拦截
+- **判定标准**: getattr 访问 `__` 开头的属性被静态拦截
 
-### SEC-04: safe_getattr 允许普通属性
+### SEC-04: 普通属性访问不误拦
 - **前置条件**: 无
 - **操作步骤**:
   ```python
-  from backend.tools.executor import CodeExecutor
-  executor = CodeExecutor(timeout=5)
-  code = '''
-class MyClass:
-    name = "hello"
-obj = MyClass()
-result = getattr(obj, "name")
-'''
-  result = executor.safe_exec(code)
-  print(f"success: {result['success']}")
-  print(f"result: {result['globals']['result']}")
+  from backend.tools.executor import CodeValidator
+  code = 'name = getattr(obj, "name")'
+  is_safe, issues = CodeValidator.validate(code)
+  print(f"is_safe: {is_safe}")
   ```
 - **预期结果**:
   ```
-  success: True
-  result: hello
+  is_safe: True
   ```
-- **判定标准**: 普通属性访问正常工作
+- **判定标准**: 只拦截 `__` 开头的属性名，普通属性访问放行
+
+> 注（2026-09-10 修订）：本条早期描述的是 `CodeExecutor.safe_exec()` 运行时的 `safe_getattr` 白名单。exec 沙箱已在 Phase 8 移除，`safe_getattr` 随之不存在，现在改由 `CodeValidator` 在**静态检查阶段**拦截，对应 `tests/test_security.py::test_code_validator_blocks_dunder_getattr` 与 `test_code_validator_allows_normal_getattr`。
 
 ---
 
@@ -1691,6 +1496,70 @@ result = getattr(obj, "name")
 
 ---
 
+## 二十、装配工厂（Factory）
+
+> 2026-09-10 新增：`create_orchestrator()` 统一了 CLI 与 Streamlit 两处装配，对应 `tests/test_factory.py`（3 个用例）。
+
+### FC-01: 完整模式注册四个Agent
+- **前置条件**: 无（mock 掉 LLMFactory，不发起真实调用）
+- **操作步骤**:
+  ```python
+  from unittest.mock import Mock, patch
+  from backend.core.factory import create_orchestrator
+
+  with patch("backend.core.factory.LLMFactory") as f:
+      f.create.return_value = Mock()
+      orch = create_orchestrator(api_key="test-key", model="test-model")
+      print(f"注册的Agent: {sorted(orch.agents)}")
+  ```
+- **预期结果**:
+  ```
+  注册的Agent: ['debugger', 'generator', 'reviewer', 'test_generator']
+  ```
+- **判定标准**: 四个Agent全部注册，且共享同一个 LLM 实例
+
+### FC-02: 快速模式只注册 generator
+- **前置条件**: 无
+- **操作步骤**:
+  ```python
+  from unittest.mock import Mock, patch
+  from backend.core.factory import create_orchestrator
+
+  with patch("backend.core.factory.LLMFactory") as f:
+      f.create.return_value = Mock()
+      orch = create_orchestrator(api_key="k", model="m", fast=True)
+      print(f"注册的Agent: {sorted(orch.agents)}")
+  ```
+- **预期结果**:
+  ```
+  注册的Agent: ['generator']
+  ```
+- **判定标准**: 快速模式不装配 reviewer / debugger / test_generator
+
+### FC-03: LLM 按调用方传入的参数创建
+- **前置条件**: 无
+- **操作步骤**:
+  ```python
+  from unittest.mock import Mock, patch
+  from backend.core.factory import create_orchestrator
+
+  with patch("backend.core.factory.LLMFactory") as f:
+      f.create.return_value = Mock()
+      create_orchestrator(api_key="key-1", model="model-1", base_url="https://example.com/v1")
+      print(f"位置参数: {f.create.call_args.args}")
+      print(f"api_key: {f.create.call_args.kwargs['api_key']}")
+      print(f"base_url: {f.create.call_args.kwargs['base_url']}")
+  ```
+- **预期结果**:
+  ```
+  位置参数: ('openai', 'model-1')
+  api_key: key-1
+  base_url: https://example.com/v1
+  ```
+- **判定标准**: api_key / model / base_url 原样透传给 LLMFactory
+
+---
+
 ## 测试执行记录模板
 
 ```
@@ -1708,22 +1577,23 @@ result = getattr(obj, "name")
 | 类别 | 测试项数 |
 |------|----------|
 | 状态机 | 10 |
-| 通信协议 | 2 |
+| 通信协议 | 0（整章废弃）|
 | 共享上下文 | 5 |
 | 代码生成 Agent | 4 |
 | 代码审查 Agent | 5 |
 | 调试 Agent | 3 |
 | 测试生成 Agent | 3 |
-| 协调器 | 8 |
-| 记忆系统 | 4 |
+| 协调器 | 7（OR-08 废弃）|
+| 记忆系统 | 0（整章废弃）|
 | LLM 抽象层 | 4 |
 | Token 管理器 | 1 |
 | AST 解析器 | 2 |
-| 代码执行器 | 5 |
+| 代码执行器 | 3（EX-04/05 废弃）|
 | 输入验证 | 3 |
 | 日志系统 | 3 |
 | 安全验证 | 4 |
 | 代码工具 | 2 |
 | CLI 命令 | 4 |
 | 前端 Web UI | 6 |
-| **合计** | **78** |
+| 装配工厂 | 3 |
+| **合计** | **72** |

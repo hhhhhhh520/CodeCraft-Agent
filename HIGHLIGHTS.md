@@ -170,11 +170,11 @@ def create_llm(provider: str, model: str) -> BaseLLM:
 
 | 指标 | 数值 |
 |------|------|
-| 测试覆盖率 | 81%（移除记忆模块前口径） |
-| 测试数量 | 116个（2026-09-10，移除17个记忆测试后） |
-| 代码行数 | ~3000行 |
+| 测试覆盖率 | backend 约 **74%**（2026-09-10 实测 `pytest --cov=backend`；cli/frontend 无自动化测试，未纳入） |
+| 测试数量 | **116 个**（2026-09-10；删 17 个记忆测试 + 增 3 个工厂测试后，130 → 116） |
+| 代码行数 | 约 **6500 行**（backend + cli + frontend + tests） |
 | 模块化程度 | 高 |
-| 类型注解覆盖 | 100% |
+| 类型注解 | backend 覆盖全部公开接口；已配置 mypy（strict），`mypy backend/` 尚有 **29 处**告警（按规则：`type-arg` 泛型缺参 9、`union-attr` 7、`arg-type` 6、`no-any-return` 5 等），对 backend+cli+frontend 全量为 **92 处** |
 
 ---
 
@@ -190,8 +190,8 @@ def create_llm(provider: str, model: str) -> BaseLLM:
 ### 设计模式应用
 - **工厂模式**: LLM Provider创建
 - **状态机模式**: 任务状态管理
-- **策略模式**: Agent行为定义
-- **观察者模式**: 消息通知机制
+- **策略模式**: Agent行为定义（`BaseAgent` 抽象 `process()`，各 Agent 实现）
+- **装配工厂**: `create_orchestrator()` 统一 CLI 与 Web 两处装配
 
 ### LLM应用开发
 - Prompt Engineering
@@ -220,8 +220,8 @@ def create_llm(provider: str, model: str) -> BaseLLM:
 **解决方案**:
 - 引入Orchestrator集中协调
 - 状态机管理任务流转
-- SharedContext共享上下文
-- 消息队列解耦通信
+- SharedContext共享上下文（RLock 线程安全）
+- 由 Orchestrator 直接调用下游 Agent 并回传结果（早期设计的 AgentMessage 通信协议因零调用已移除）
 
 ### 难点2: 状态转换的边界条件
 
@@ -262,7 +262,7 @@ def create_llm(provider: str, model: str) -> BaseLLM:
 | 状态管理 | 状态机 | 无 | 简单状态 |
 | 反馈闭环 | ✅ 多轮审查修复 | ❌ | ❌ |
 | 多模型支持 | ✅ OpenAI/Claude | 仅OpenAI | 仅OpenAI |
-| 测试覆盖 | 81% | 低 | 低 |
+| 测试覆盖 | backend 74%（116个测试） | 低 | 低 |
 | 学习曲线 | 低 | 中 | 中 |
 
 ---
@@ -270,7 +270,7 @@ def create_llm(provider: str, model: str) -> BaseLLM:
 ## 未来规划
 
 ### 短期（1-2周）
-- [ ] 流式输出UI
+- [x] 流式输出UI（Phase 5 已完成，实现在 `frontend/pages/chat.py` 的 `llm.stream()` 内联渲染）
 - [ ] 在线Demo部署
 
 ### 中期（1-2月）
@@ -285,4 +285,4 @@ def create_llm(provider: str, model: str) -> BaseLLM:
 
 ---
 
-*文档版本: 1.1 | 更新时间: 2026-09-06*
+*文档版本: 1.2 | 更新时间: 2026-09-10（同步"移除记忆系统"后的实测数据）*

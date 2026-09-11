@@ -1,15 +1,15 @@
 # CodeCraft Agent
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Tests](https://img.shields.io/badge/Tests-130%20passed-brightgreen)
-![Coverage](https://img.shields.io/badge/Coverage-81%25-green)
+![Tests](https://img.shields.io/badge/Tests-116%20passed-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-74%25%20(backend)-green)
 ![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-orange)
 
 > 多Agent协作的Python代码生成与优化助手
 
 基于多Agent协作的Python代码生成与优化助手，实现代码生成 → 审查 → 修复 → 测试的完整闭环。
 
-📚 **文档**: [项目亮点](HIGHLIGHTS.md) | [面试指南](INTERVIEW_GUIDE.md) | [详细架构](docs/assets/architecture.md)
+📚 **文档**: [项目亮点](HIGHLIGHTS.md) | [详细架构](docs/assets/architecture.md)
 
 ## 项目亮点
 
@@ -67,7 +67,8 @@ CodeCraft Agent/
 │   │   ├── claude_llm.py       # Claude实现
 │   │   └── token_manager.py    # Token管理器
 │   └── utils/                  # 工具模块
-│       └── code_utils.py       # 代码处理工具
+│       ├── code_utils.py       # 代码处理工具
+│       └── input_validator.py  # 输入校验与脱敏
 ├── frontend/                   # Streamlit Web界面
 │   ├── app.py                  # 主入口
 │   ├── components/             # UI组件
@@ -240,10 +241,10 @@ stateDiagram-v2
 ### 运行测试
 
 ```bash
-# 运行所有测试
+# 运行所有测试（116 个）
 pytest tests/ -v
 
-# 带覆盖率
+# 带覆盖率（backend 约 74%；cli/ 与 frontend/ 目前无自动化测试，未纳入统计）
 pytest tests/ --cov=backend --cov-report=html
 ```
 

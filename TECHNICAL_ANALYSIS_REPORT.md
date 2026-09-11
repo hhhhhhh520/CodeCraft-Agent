@@ -1,6 +1,21 @@
 # CodeCraft Agent 项目完整技术分析报告
 
-> **时点快照声明（2026-09-06 补充）**: 本文为 2026-04-15 的分析快照，文中"80个测试用例"等数据均为当时状态。此后项目已迭代至 130+ 个测试；`backend/core/protocol.py`（AgentMessage/MessageType 死代码）已于 2026-06-28 移除。最新状态请见 [PROGRESS.md](PROGRESS.md)。
+**时点快照声明（2026-09-06 初版 / 2026-09-10 复核补全）**: 本文是 **2026-04-15 的分析快照**。文中的数据（"80个测试用例"、"81%覆盖率"）、目录结构、代码片段**全部是当时状态，不代表当前代码**。
+
+此后项目发生过以下删除 —— 本文相应段落保留，仅作历史记录，**不要按文中代码执行**：
+
+| 已移除 | 时间 | 说明 |
+|---|---|---|
+| `backend/core/protocol.py`（AgentMessage / MessageType） | 2026-06-28 | 死代码、零调用方；`tests/test_protocol.py` 同步删除 |
+| `BaseAgent.observe() / think() / act()` | Phase 7 | 未被使用的 ReAct 骨架方法 |
+| `CodeExecutor.safe_exec()` 及其 `safe_getattr` 白名单 | Phase 8 | exec 沙箱整体移除，统一改走 subprocess `execute()` |
+| `backend/core/memory.py`、`backend/core/vector_memory.py` | 2026-09-10 | 实现后从未被主流程调用；`tests/test_memory.py`、`tests/test_vector_memory.py` 同步删除 |
+| `Orchestrator.send_message()` | 2026-06-28 | 依赖 protocol.py，随其一起删除 |
+| `BaseAgent.receive_message()` | 2026-09-10 | 依赖已删的 protocol.py，零调用 |
+| `demos/`（4 个演示脚本 + 运行脚本 + 演示指南） | 2026-09-10 | 引用已删的记忆模块 |
+| 依赖 `langchain` / `langchain-openai` / `langchain-anthropic` / `chromadb` / `numpy` | 2026-09-10 | 代码中从未 import |
+
+**当前状态**（116 个测试全部通过、backend 覆盖率约 74%）请以 [PROGRESS.md](PROGRESS.md)、[README.md](README.md) 为准。
 
 > 分析日期: 2026-04-15
 > 项目版本: v0.2.0
@@ -16,7 +31,7 @@
 4. [专业Agent实现](#四专业agent实现)
 5. [LLM抽象层](#五llm抽象层)
 6. [工具层设计](#六工具层设计)
-7. [记忆系统](#七记忆系统)
+7. ~~[记忆系统](#七记忆系统)~~ ⚠️ 已移除
 8. [错误处理与日志](#八错误处理与日志)
 9. [前端实现](#九前端实现)
 10. [CLI实现](#十cli实现)
@@ -42,10 +57,10 @@
 | **多Agent协作** | Generator、Reviewer、Debugger、TestGenerator 四个专业Agent分工协作 |
 | **反馈闭环** | 审查不通过自动修复，最多3次迭代 |
 | **状态机管理** | 8状态有限状态机，确保任务流转可控 |
-| **多模型支持** | OpenAI、Claude、DeepSeek 可切换 |
-| **向量记忆** | ChromaDB语义检索历史代码 |
+| **多模型支持** | OpenAI、Claude、DeepSeek 可切换（DeepSeek 经 base_url 复用 OpenAI 兼容接口） |
+| ~~**向量记忆**~~ | ⚠️ ~~ChromaDB语义检索历史代码~~（2026-09-10 已移除） |
 | **双入口** | CLI (Typer) + Web (Streamlit) |
-| **高测试覆盖** | 80个测试用例，全部通过 |
+| **高测试覆盖** | 80个测试用例（快照口径；当前 116 个） |
 
 ### 1.3 项目规模
 
@@ -79,7 +94,7 @@
 │           AST Parser  │  Code Executor                      │
 ├─────────────────────────────────────────────────────────────┤
 │                     基础设施层                               │
-│    LLM Adapter  │  Memory  │  Token Manager  │  Logger      │
+│   LLM Adapter  │  Token Manager  │  Logger     │  (Memory 已移除) │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -90,13 +105,14 @@ D:\my project\CodeCraft Agent/
 ├── backend/                          # 后端核心模块
 │   ├── __init__.py                   # 包初始化，版本号 v0.2.0
 │   ├── core/                         # 核心框架层
-│   │   ├── agent.py                  # Agent基类（ReAct模式）
+│   │   ├── agent.py                  # Agent基类（⚠️ ReAct骨架observe/think/act已移除）
 │   │   ├── orchestrator.py           # 多Agent协调器
 │   │   ├── state.py                  # 8状态有限状态机
-│   │   ├── protocol.py               # Agent通信协议
 │   │   ├── context.py                # 共享上下文（线程安全）
-│   │   ├── memory.py                 # 记忆系统
-│   │   ├── vector_memory.py          # ChromaDB向量记忆
+│   │   ├── factory.py                # Orchestrator装配工厂（2026-09-10 新增）
+│   │   ├── protocol.py               # ⚠️ 已于 2026-06-28 移除
+│   │   ├── memory.py                 # ⚠️ 已于 2026-09-10 移除
+│   │   ├── vector_memory.py          # ⚠️ 已于 2026-09-10 移除
 │   │   ├── logger.py                 # 日志系统（敏感信息脱敏）
 │   │   └── errors.py                 # 统一错误处理
 │   ├── agents/                       # 专业Agent实现
@@ -188,7 +204,9 @@ D:\my project\CodeCraft Agent/
 
 ### 3.1 Agent基类 (`backend/core/agent.py`)
 
-#### 设计理念: ReAct推理模式
+> ⚠️ **下方为 2026-04 快照**：`memory` 参数与 `observe()/think()/act()` 方法均已移除；当前 `BaseAgent` 只有 `__init__()`（name/llm/tools）与抽象方法 `process()`。
+
+#### 设计理念: ReAct推理模式（已不适用）
 
 ```python
 class BaseAgent(ABC):
@@ -434,7 +452,9 @@ def _handle_feedback_loop(self, result: dict, max_iterations: int = 3) -> dict:
 - 调用 TestGeneratorAgent 生成测试用例
 - 返回结果包含 `test_code` 和 `test_passed`
 
-### 3.4 Agent通信协议 (`backend/core/protocol.py`)
+### 3.4 Agent通信协议 (`backend/core/protocol.py`) ⚠️ 已移除（2026-06-28）
+
+> 死代码、零调用方，已于 2026-06-28 连同 `tests/test_protocol.py` 一起删除。以下仅作历史记录。
 
 #### 消息类型
 
@@ -955,6 +975,13 @@ class ASTParser:
 
 ### 6.2 沙箱执行器 (`backend/tools/executor.py`)
 
+> ⚠️ **代码已过期，以现行实现为准（2026-09-10 标注）**。下方是 2026-04 的版本，现行实现有三处收紧：
+> 1. `execute()` 签名变为 `execute(code, validate=True, test_safe=False)`，默认先过 `CodeValidator` 静态校验，不通过直接返回 `{"success": False, "error": "代码未通过安全验证", "security_issues": [...]}`；
+> 2. 临时文件改用 `tempfile.TemporaryDirectory()` + 固定名 `sandbox.py`，并传 `cwd=tmpdir` 限制工作目录（旧版用 `NamedTemporaryFile` 且不限定 cwd，脚本可读到进程当前目录）；
+> 3. `_get_safe_env()` **不再传 `HOME`**；Windows 下额外传 `TEMP`/`TMP`/`SystemRoot`，且用固定路径 `C:\Windows\Temp` 以避免泄露宿主用户名。
+>
+> 另：`__init__` 现为 `__init__(timeout: int = 30, max_memory_mb: int = 256)`。
+
 ```python
 class CodeExecutor:
     """代码执行器 - 在沙箱环境中安全执行Python代码"""
@@ -1018,7 +1045,11 @@ class CodeExecutor:
 
 ---
 
-## 七、记忆系统
+## 七、记忆系统 ⚠️ 已移除（2026-09-10）
+
+> 本章描述的 `core/memory.py`、`core/vector_memory.py` 实现后**从未被主流程调用**（全仓零调用点），已于 2026-09-10 连同其对应用例一并删除，依赖 `chromadb` 也已从 requirements 移除。以下仅作历史记录。
+>
+> 教训：如果今后重做记忆能力，必须把**写入路径**先接到主流程上再谈检索，否则会重演「接了但永远查空库」。
 
 ### 7.1 多层记忆架构
 
@@ -1046,7 +1077,7 @@ class CodeExecutor:
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 7.2 短期记忆 (`backend/core/memory.py`)
+### 7.2 短期记忆 (`backend/core/memory.py`) ⚠️ 文件已删除，以下代码不可运行
 
 ```python
 class ShortTermMemory:
@@ -1073,7 +1104,7 @@ class ShortTermMemory:
         return self.items[-k:]
 ```
 
-### 7.3 向量记忆 (`backend/core/vector_memory.py`)
+### 7.3 向量记忆 (`backend/core/vector_memory.py`) ⚠️ 文件已删除，以下代码不可运行
 
 ```python
 class VectorMemory:
@@ -1130,7 +1161,7 @@ class VectorMemory:
         return self._format_results(results)
 ```
 
-### 7.4 混合记忆
+### 7.4 混合记忆 ⚠️ `HybridMemory` 随记忆系统一并删除，以下代码不可运行
 
 ```python
 class HybridMemory:
@@ -1488,17 +1519,17 @@ def get_orchestrator(fast: bool = False) -> Orchestrator:
     # 创建工具
     tools: list[Any] = [ASTParser(), CodeExecutor(timeout=30)]
 
-    # 创建记忆系统
-    memory = Memory(enable_vector=True)
-
-    # 创建所有Agent（注入 tools 和 memory）
-    generator = CodeGeneratorAgent(llm=llm, tools=tools, memory=memory)
+    # ⚠️ 2026-04 快照。当前该装配逻辑已收敛到 backend/core/factory.py 的
+    #    create_orchestrator(api_key, model, base_url, fast, token_manager)，
+    #    CLI 与 Streamlit 两处入口共用，不再各自重复组装；
+    #    记忆系统与 memory= 注入已随 2026-09-10 清理移除。
+    generator = CodeGeneratorAgent(llm=llm, tools=tools)
     agents: dict[str, Any] = {"generator": generator}
 
     if not fast:
-        reviewer = CodeReviewerAgent(llm=llm, tools=tools, memory=memory)
-        debugger = DebuggerAgent(llm=llm, tools=tools, memory=memory)
-        test_generator = TestGeneratorAgent(llm=llm, tools=tools, memory=memory)
+        reviewer = CodeReviewerAgent(llm=llm, tools=tools)
+        debugger = DebuggerAgent(llm=llm, tools=tools)
+        test_generator = TestGeneratorAgent(llm=llm, tools=tools)
         agents["reviewer"] = reviewer
         agents["debugger"] = debugger
         agents["test_generator"] = test_generator
@@ -1569,7 +1600,7 @@ def version() -> None:
 | TokenManager | 全局单例，传入 LLM |
 | ASTParser | 注入 Agent tools |
 | CodeExecutor | 注入 Agent tools |
-| Memory | 启用向量记忆，传入 Agent |
+| ~~Memory~~ | ⚠️ 已移除（2026-09-10）；装配统一走 `create_orchestrator()` |
 | TestGeneratorAgent | 非快速模式下创建 |
 
 **完整工作流**：
@@ -1588,23 +1619,25 @@ def version() -> None:
 | 测试文件 | 测试目标 | 测试数量 |
 |----------|----------|----------|
 | test_state.py | 状态机 | 9个 |
-| test_protocol.py | 通信协议 | 5个 |
+| ~~test_protocol.py~~ | ⚠️ 已随 protocol.py 删除 | - |
 | test_agent.py | Agent基类 | 4个 |
 | test_context.py | 共享上下文 | 6个 |
 | test_llm.py | LLM抽象层 | 5个 |
 | test_code_generator.py | 代码生成Agent | 4个 |
 | test_code_reviewer.py | 代码审查Agent | 4个 |
 | test_debugger.py | 调试Agent | 4个 |
-| test_memory.py | 记忆系统 | 5个 |
+| ~~test_memory.py~~ | ⚠️ 2026-09-10 删除 | - |
 | test_orchestrator.py | 协调器 | 4个 |
 | test_ast_parser.py | AST解析器 | 4个 |
 | test_executor.py | 执行器 | 4个 |
 | test_test_generator.py | 测试生成器 | 3个 |
 | test_token_manager.py | Token管理器 | 6个 |
-| test_vector_memory.py | 向量记忆 | 13个 |
+| ~~test_vector_memory.py~~ | ⚠️ 2026-09-10 删除 | - |
 | test_integration.py | 集成测试 | 4个 |
 
-**总计**: 80个测试用例，全部通过
+**总计（2026-04 快照）**: 80个测试用例。
+
+**当前**: 116 个测试全部通过（`pytest -q`，约 4 秒）。相对快照的 80 个，中间经历了两轮变动：2026-06-28 删 5 个协议用例、2026-09-10 删 17 个记忆用例（`test_memory.py` 4 个 + `test_vector_memory.py` 13 个），期间 Phase 7/8 新增了 `test_errors.py`、`test_code_utils.py`、安全攻击向量用例，2026-09-10 又新增 `test_factory.py`（3 个）。
 
 ### 11.2 测试示例
 
@@ -1706,14 +1739,13 @@ def test_full_multi_agent_workflow(self, mock_openai_class):
 | 类别 | 技术 | 版本要求 | 用途 |
 |------|------|----------|------|
 | **编程语言** | Python | >=3.10 | 类型注解、模式匹配等新特性 |
-| **LLM框架** | LangChain | >=0.2.0 | LLM应用开发框架 |
-| **LLM适配** | langchain-openai | >=0.1.0 | OpenAI集成 |
-| **LLM适配** | langchain-anthropic | >=0.1.0 | Claude集成 |
+| ~~LLM框架~~ | ⚠️ ~~LangChain~~ | - | 已移除：代码中从未 import，编排/状态机/重试均自研 |
+| ~~LLM适配~~ | ⚠️ ~~langchain-openai / langchain-anthropic~~ | - | 已移除：直接使用官方 SDK |
 | **LLM API** | OpenAI | >=1.0.0 | OpenAI官方SDK |
 | **LLM API** | Anthropic | >=0.25.0 | Claude官方SDK |
 | **CLI框架** | Typer | >=0.12.0 | 命令行界面 |
 | **终端美化** | Rich | >=13.0.0 | 富文本终端输出 |
-| **向量存储** | ChromaDB | >=0.4.0 | 语义检索历史代码 |
+| ~~向量存储~~ | ⚠️ ~~ChromaDB~~ | - | 已移除：随记忆系统一并删除 |
 | **数据验证** | Pydantic | >=2.0.0 | 数据模型验证 |
 | **Web框架** | Streamlit | >=1.28.0 | Web UI界面 |
 | **剪贴板** | pyperclip | >=1.8.0 | 代码复制功能 |
@@ -1827,7 +1859,9 @@ class CodeReviewerAgent(BaseAgent):
 - 可独立测试和优化
 - 易于扩展新Agent
 
-### 13.4 观察者模式
+### 13.4 观察者模式 ⚠️ 已移除
+
+> 该模式依赖的 `protocol.py`（AgentMessage/MessageType）已于 2026-06-28 删除，Agent 间现在通过 Orchestrator 直接调用传递结果。以下仅作历史记录。
 
 **应用场景**: Agent间消息通信
 
@@ -1876,13 +1910,13 @@ class BaseAgent(ABC):
 | **反馈闭环** | 审查不通过自动修复，最多3次迭代 | `_handle_feedback_loop()` |
 | **状态机管理** | 8状态有限状态机，确保任务流转可控 | `StateMachine`类 |
 | **多模型支持** | OpenAI / Claude / DeepSeek 可切换 | `LLMFactory`工厂模式 |
-| **向量记忆** | ChromaDB语义检索历史代码 | `VectorMemory`类 |
-| **高测试覆盖** | 80个测试用例，全部通过 | pytest + pytest-cov |
-| **完整集成** | 所有组件已集成到CLI和Web入口 | tools/memory/token_manager注入 |
+| ~~向量记忆~~ | ⚠️ 已移除（2026-09-10） | - |
+| **高测试覆盖** | 116个测试用例，全部通过 | pytest + pytest-cov |
+| **完整集成** | CLI 与 Web 共用同一装配入口 | `create_orchestrator()`（tools/token_manager 注入） |
 
 ### 14.2 技术创新点
 
-1. **ReAct推理模式**: Agent采用观察-思考-行动循环决策
+1. ~~**ReAct推理模式**~~: ⚠️ 该骨架方法（observe/think/act）已移除，当前是「基类定义抽象 process() + 各 Agent 实现」的策略模式
 2. **线程安全上下文**: 使用RLock保护共享数据
 3. **敏感信息脱敏**: 日志系统自动过滤API Key等敏感信息
 4. **沙箱执行**: 代码执行器隔离用户代码，限制权限
@@ -1899,9 +1933,9 @@ class BaseAgent(ABC):
 | 状态管理 | 8状态FSM | 无 | 简单状态 |
 | 反馈闭环 | ✅ 多轮审查修复 | ❌ | ❌ |
 | 多模型支持 | OpenAI/Claude/DeepSeek | 仅OpenAI | 仅OpenAI |
-| 测试覆盖 | 80个测试全部通过 | 低 | 低 |
+| 测试覆盖 | 116个测试全部通过 | 低 | 低 |
 | Web UI | Streamlit | 无 | 无 |
-| 向量记忆 | ChromaDB | Pinecone | ChromaDB |
+| 向量记忆 | 无（曾实现后移除） | Pinecone | ChromaDB |
 | Token追踪 | ✅ 集成 | ❌ | ❌ |
 | 自动测试生成 | ✅ TestGeneratorAgent | ❌ | ❌ |
 
@@ -1922,11 +1956,11 @@ class BaseAgent(ABC):
 - 工厂模式：LLM Provider创建
 - 状态机模式：任务状态管理
 - 策略模式：Agent行为定义
-- 观察者模式：消息通知机制
+- 模板方法：`BaseAgent` 定义抽象 `process()`，各 Agent 实现
 
 #### LLM应用开发
 - Prompt Engineering
-- LangChain框架应用
+- 官方 SDK 直用（不引编排框架，自己实现编排与重试）
 - 多模型适配
 - Token管理优化
 
@@ -1970,7 +2004,7 @@ class BaseAgent(ABC):
 ### 15.3 简历写法建议
 
 **简洁版**:
-> 设计并实现多Agent协作的Python代码生成系统，采用Orchestrator模式协调4个专业Agent（生成、审查、调试、测试），通过状态机管理任务流转，实现了代码生成-审查-修复的自动化闭环。支持OpenAI/Claude多模型切换，测试覆盖率81%。
+> 设计并实现多Agent协作的Python代码生成系统，采用Orchestrator模式协调4个专业Agent（生成、审查、调试、测试），通过8状态有限状态机管理任务流转，实现了代码生成-审查-修复-测试的自动化闭环。支持OpenAI/Claude多模型切换，116个测试全部通过。
 
 **详细版**:
 > **CodeCraft Agent** - 多Agent协作代码生成系统
@@ -1979,7 +2013,7 @@ class BaseAgent(ABC):
 > - 构建反馈闭环机制，审查不通过自动修复，最多3次迭代
 > - 设计LLM抽象层，支持OpenAI/Claude多模型切换
 > - 实现AST解析器、沙箱执行器、Token管理器等工具链
-> - 编写67个测试用例，覆盖率达到81%
+> - 编写116个测试用例，backend 覆盖率约74%
 
 ---
 
@@ -2050,11 +2084,11 @@ streamlit run frontend/app.py --server.port 8501
 
 | 类型 | 数量 |
 |------|------|
-| Python文件 | 35个 |
-| 测试文件 | 16个 |
-| 文档文件 | 5个 |
-| 配置文件 | 3个 |
-| 总代码行数 | ~3000行 |
+| Python文件 | ~~35个~~ → 当前 42 个（backend+cli+frontend） |
+| 测试文件 | ~~16个~~ → 当前 18 个 |
+| 文档文件 | 5个（快照口径） |
+| 配置文件 | 3个（快照口径） |
+| 总代码行数 | ~~~3000行~~ → 当前约 6500 行（含 tests） |
 
 ---
 

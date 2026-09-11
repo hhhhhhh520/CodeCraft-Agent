@@ -3,6 +3,13 @@
 > 创建时间: 2026-04-12
 > 目标: 完善项目以提升简历展示效果
 
+> ⚠️ **本方案已作废（2026-09-10 标注）**: 本文是 2026-04-12 的「简历展示完善」方案，其中三项最终未落地，阅读时请勿当作现状：
+> - **记忆系统 / ChromaDB 向量检索** —— 曾按本方案实现，但实现后从未被主流程调用，已于 2026-09-10 整体删除；
+> - **在线 Demo** —— 从未实际部署，下文的 `codecraft-agent.streamlit.app` 只是方案里的占位地址，**不是可用链接**；
+> - **测试数据** —— 文中「67个测试 / 81%覆盖率」为当时口径，当前为 **116 个测试、backend 覆盖率约 74%**。
+>
+> 最新状态请见 [PROGRESS.md](PROGRESS.md)、[HIGHLIGHTS.md](HIGHLIGHTS.md)。
+
 ---
 
 ## 一、项目现状分析
@@ -450,7 +457,14 @@ A:
 4. Q&A
 
 ## 简历写法建议
-设计并实现多Agent协作的Python代码生成系统，采用Orchestrator模式协调4个专业Agent（生成、审查、调试、测试），通过状态机管理任务流转，实现了代码生成-审查-修复的自动化闭环。支持OpenAI/Claude多模型切换，集成ChromaDB向量检索，测试覆盖率81%。
+
+> ⚠️ **下面这句原文已失实**（"集成ChromaDB向量检索"对应的模块已删除、"81%"口径过期），**不得直接使用**。修正版见其后。
+
+~~设计并实现多Agent协作的Python代码生成系统，采用Orchestrator模式协调4个专业Agent（生成、审查、调试、测试），通过状态机管理任务流转，实现了代码生成-审查-修复的自动化闭环。支持OpenAI/Claude多模型切换，集成ChromaDB向量检索，测试覆盖率81%。~~
+
+**修正版（2026-09-10 核实）**:
+> 设计并实现多Agent协作的Python代码生成系统，采用Orchestrator模式协调4个专业Agent（生成、审查、调试、测试），通过8状态有限状态机管理任务流转，实现了代码生成-审查-修复-测试的自动化闭环。支持OpenAI/Claude多模型切换，116个测试全部通过。
+
 ```
 
 **产出物3**: 更新README添加徽章
@@ -459,8 +473,8 @@ A:
 # CodeCraft Agent
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Tests](https://img.shields.io/badge/Tests-67%20passed-brightgreen)
-![Coverage](https://img.shields.io/badge/Coverage-81%25-green)
+![Tests](https://img.shields.io/badge/Tests-67%20passed-brightgreen)   <!-- ⚠️ 旧值，勿直接使用；当前为 116 -->
+![Coverage](https://img.shields.io/badge/Coverage-81%25-green)          <!-- ⚠️ 旧值，勿直接使用；当前 backend 约 74% -->
 ![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-orange)
 
 > 多Agent协作的Python代码生成与优化助手 | [在线Demo](https://codecraft-agent.streamlit.app)

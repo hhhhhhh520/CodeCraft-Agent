@@ -8,6 +8,8 @@
 
 **Tech Stack:** Python 3.10+, LangChain, OpenAI API, Claude API, Typer, Rich, ChromaDB, SQLite
 
+> ⚠️ **历史计划，非现状（2026-09-10 标注）**: 本计划中的 LangChain / ChromaDB / SQLite / 消息协议（AgentMessage）**最终都没有进入实现或已被删除**——实际只用了官方 `openai`/`anthropic` SDK + Typer/Rich/Streamlit，Agent 间由 Orchestrator 直接调用传值。请勿按本文判断当前技术栈，当前状态见 [PROGRESS.md](../../../PROGRESS.md)。
+
 ---
 
 ## 文件结构规划
