@@ -50,7 +50,7 @@ CodeCraft Agent/
 │   │   ├── orchestrator.py     # 多Agent协调器
 │   │   ├── state.py            # 任务状态机
 │   │   ├── context.py          # 共享上下文
-│   │   ├── memory.py           # 记忆系统
+│   │   ├── factory.py          # Orchestrator装配工厂
 │   │   ├── logger.py           # 日志系统
 │   │   └── errors.py           # 统一错误处理
 │   ├── agents/                 # 专业Agent实现
@@ -171,7 +171,6 @@ graph TB
 
     subgraph 基础设施层
         LLM[LLM Adapter<br/>OpenAI/Claude/DeepSeek]
-        MEM[Memory<br/>记忆系统]
         TOK[Token Manager<br/>Token管理]
     end
 
@@ -189,7 +188,6 @@ graph TB
     REV --> LLM
     DBG --> LLM
     LLM --> TOK
-    CTX --> MEM
 ```
 
 ### Agent协作流程

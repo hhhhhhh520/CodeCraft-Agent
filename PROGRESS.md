@@ -96,12 +96,12 @@
 - `docs/assets/architecture.md` - 5个详细架构图文档
 - `HIGHLIGHTS.md` - 技术亮点文档
 - `INTERVIEW_GUIDE.md` - 面试话术文档
-- `demos/` - 4个演示脚本 + 运行脚本 + 演示指南
+- `demos/` - 4个演示脚本 + 运行脚本 + 演示指南（已于 2026-09-10 移除）
 - `frontend/components/streaming_display.py` - 流式显示组件
 - `frontend/pages/chat.py` - 集成流式输出
-- `backend/core/vector_memory.py` - 向量记忆系统
-- `backend/core/memory.py` - 集成向量记忆
-- `tests/test_vector_memory.py` - 向量记忆测试
+- `backend/core/vector_memory.py` - 向量记忆系统（已于 2026-09-10 移除）
+- `backend/core/memory.py` - 集成向量记忆（已于 2026-09-10 移除）
+- `tests/test_vector_memory.py` - 向量记忆测试（已于 2026-09-10 移除）
 - `.streamlit/config.toml` - Streamlit配置
 - `.streamlit/secrets.toml.example` - Secrets示例
 - `packages.txt` - 系统依赖
@@ -228,7 +228,7 @@ codecraft-agent/
 │   │   ├── orchestrator.py     ✅ 多Agent协调器
 │   │   ├── state.py            ✅ 任务状态机
 │   │   ├── context.py          ✅ 共享上下文
-│   │   └── memory.py           ✅ 记忆系统
+│   │   └── factory.py          ✅ Orchestrator装配工厂
 │   ├── agents/
 │   │   ├── __init__.py         ✅
 │   │   ├── code_generator.py   ✅ 代码生成Agent
@@ -257,7 +257,6 @@ codecraft-agent/
     ├── test_code_generator.py  ✅
     ├── test_code_reviewer.py   ✅
     ├── test_debugger.py        ✅
-    ├── test_memory.py          ✅
     ├── test_orchestrator.py    ✅
     ├── test_ast_parser.py      ✅
     ├── test_executor.py        ✅
@@ -266,8 +265,7 @@ codecraft-agent/
     ├── test_integration.py     ✅
     ├── test_security.py        ✅
     ├── test_errors.py          ✅
-    ├── test_code_utils.py      ✅
-    └── test_vector_memory.py   ✅
+    └── test_code_utils.py      ✅
 ```
 
 ---

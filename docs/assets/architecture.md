@@ -33,7 +33,6 @@ graph TB
 
     subgraph 基础设施层
         LLM[LLM Adapter<br/>OpenAI/Claude/DeepSeek]
-        MEM[Memory<br/>记忆系统]
         TOK[Token Manager<br/>Token管理]
     end
 
@@ -51,7 +50,6 @@ graph TB
     REV --> LLM
     DBG --> LLM
     LLM --> TOK
-    CTX --> MEM
 
     style CLI fill:#e1f5fe
     style WEB fill:#e1f5fe
@@ -65,7 +63,6 @@ graph TB
     style AST fill:#fce4ec
     style EXE fill:#fce4ec
     style LLM fill:#f3e5f5
-    style MEM fill:#f3e5f5
     style TOK fill:#f3e5f5
 ```
 
@@ -231,7 +228,6 @@ flowchart TB
 
     subgraph 存储层
         CTX[SharedContext<br/>会话上下文]
-        MEM[Memory<br/>历史记忆]
     end
 
     subgraph 输出层
@@ -244,7 +240,6 @@ flowchart TB
     PARSE --> ROUTE
     ROUTE --> EXEC
     EXEC --> CTX
-    CTX --> MEM
     EXEC --> CODE
     EXEC --> REVIEW
     EXEC --> TEST
@@ -254,7 +249,6 @@ flowchart TB
     style ROUTE fill:#fff8e1
     style EXEC fill:#fff8e1
     style CTX fill:#f3e5f5
-    style MEM fill:#f3e5f5
     style CODE fill:#e8f5e9
     style REVIEW fill:#e8f5e9
     style TEST fill:#e8f5e9
