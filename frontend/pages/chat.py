@@ -138,7 +138,7 @@ if generate_btn and requirement:
 
         import html as html_lib
 
-        for chunk in llm.stream(messages):
+        for chunk in generator.llm.stream(messages):
             full_code += chunk
             # 简化显示，避免频繁更新（转义HTML防止XSS）
             code_placeholder.markdown(f"""
@@ -173,7 +173,7 @@ if generate_btn and requirement:
                 render_agent_pipeline(current_agent="Reviewer", completed_agents=completed_agents)
 
             reviewer = agents["reviewer"]
-            review_result = reviewer.process({"code": code}, context.data)
+            review_result = reviewer.process({"code": code}, orchestrator.context.data)
             issues = review_result.get("issues", [])
             review_score = review_result.get("score", 100)
 
@@ -186,7 +186,7 @@ if generate_btn and requirement:
                     render_agent_pipeline(current_agent="Debugger", completed_agents=completed_agents)
 
                 debugger = agents["debugger"]
-                fix_result = debugger.process({"code": code, "issues": issues}, context.data)
+                fix_result = debugger.process({"code": code, "issues": issues}, orchestrator.context.data)
                 code = fix_result.get("fixed_code", code)
 
                 completed_agents.append("Debugger")
@@ -198,7 +198,7 @@ if generate_btn and requirement:
                     render_agent_pipeline(current_agent="TestGenerator", completed_agents=completed_agents)
 
                 test_generator = agents["test_generator"]
-                test_result = test_generator.process({"code": code}, context.data)
+                test_result = test_generator.process({"code": code}, orchestrator.context.data)
                 test_code = test_result.get("test_code", "")
 
                 completed_agents.append("TestGenerator")
@@ -216,6 +216,7 @@ if generate_btn and requirement:
             code=code,
             review_score=review_score,
             issues=issues,
+            test_code=test_code,
             agent_state=AgentState.DONE,
         )
         SessionManager.set_generation_result(generation_result)

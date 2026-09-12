@@ -28,6 +28,7 @@ class GenerationResult:
     review_score: int
     issues: list[str]
     agent_state: AgentState
+    test_code: Optional[str] = None
     error: Optional[str] = None
 
 
@@ -76,6 +77,7 @@ class SessionManager:
             "code": result.code,
             "review_score": result.review_score,
             "issues": result.issues,
+            "test_code": result.test_code,
         }
         st.session_state.history.insert(0, history_item)
         HistoryManager.save(st.session_state.history)
