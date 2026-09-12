@@ -62,15 +62,22 @@ class TestStreamingCodeRendering:
         assert result == code
 
         last = ph.calls[-1][0]
-        # 代码区被包在 <div ...>{escaped_code}</div> 里，取出中间那段
+        # 代码区在承载容器内部；容器是 <div …>…</div>
+        # （不要按 </pre> 提取——换用 pre 承载在真实 Streamlit 里会被净化剥掉）
         start = last.index(">", last.index("overflow-y: auto")) + 1
         end = last.index("</div>", start)
         rendered_code = last[start:end]
-        assert len(rendered_code.split("\n")) == len(code.split("\n")), (
-            f"渲染串里的代码行数({len(rendered_code.split(chr(10)))}) 与输入"
-            f"({len(code.split(chr(10)))}) 不符，空行被吃掉了：\n{rendered_code!r}"
+
+        # 换行在渲染串里被编码成 &#10;（防止空行截断 HTML 块），行数要按实体数
+        assert rendered_code.count("&#10;") == code.count("\n"), (
+            f"渲染串里编码后的换行数({rendered_code.count('&#10;')}) 与输入"
+            f"({code.count(chr(10))}) 不符，空行被吃掉了：\n{rendered_code!r}"
         )
-        assert rendered_code.startswith("def f():\n\n"), f"空行没保住：\n{rendered_code!r}"
+        assert rendered_code.startswith("def f():&#10;&#10;"), f"空行没保住：\n{rendered_code!r}"
+        assert "\n" not in rendered_code, (
+            "代码区里出现了真实换行——会重新触发空行截断 HTML 块的问题：\n"
+            f"{rendered_code!r}"
+        )
 
     def test_escapes_html_in_user_code(self):
         """用户代码里的标签必须转义，不能作为 HTML 注入"""
@@ -80,6 +87,28 @@ class TestStreamingCodeRendering:
         last = ph.calls[-1][0]
         assert "&lt;script&gt;" in last, f"用户代码未转义：\n{last}"
         assert "<script>" not in last, "用户代码里的标签成了活 HTML"
+
+    def test_no_nested_code_block_from_user_blank_lines(self):
+        """用户代码里的空行不能把后续缩进行变成嵌套代码块
+
+        真因：`<div>` 是 CommonMark 的 **type-6** HTML 块，**遇空行即终止**；
+        块一断，其后 4 空格缩进的代码行就被渲染成缩进代码块（视觉上在深色方框里
+        再套一个小代码框）。修法：把代码里的换行编码成 `&#10;`，代码区变成单行，
+        markdown 里再无空行，块不会断开。
+
+        ⚠️ 本测试用 markdown_it，能覆盖"空行截断"这条规则；但**覆盖不到
+        Streamlit 的 HTML 净化**——曾经试过用 `<pre>` 承载，markdown_it 判定通过，
+        真实 Streamlit 却把 `<pre>` 标签整个剥掉了。这类差异只能靠浏览器实测发现。
+        """
+        ph = _FakePlaceholder()
+        render_streaming_code(iter(["def f():\n\n    return 1\n"]), ph, "python")
+
+        out = MD.render(ph.calls[-1][0].lstrip())
+        assert out.count("<pre><code>") == 0, f"出现了嵌套的缩进代码块：\n{out[:400]}"
+        assert out.count("<pre") == 0, f"不应有任何 pre（承载靠 div）：\n{out[:400]}"
+        # markdown_it 不解码 HTML 实体（解码发生在浏览器），
+        # 所以这里断言实体**存在**；"浏览器会把它解码回换行"由浏览器实测覆盖。
+        assert "&#10;" in out, f"换行未被编码成实体：\n{out[:400]}"
 
     def test_progress_indicator_present(self):
         """进度行是接入组件后的新增信息，必须在最后一个渲染帧里"""

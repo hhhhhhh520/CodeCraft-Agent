@@ -40,8 +40,23 @@ def render_streaming_code(
         if show_progress:
             elapsed = time.time() - start_time
             speed = char_count / elapsed if elapsed > 0 else 0
-            # 注意：本模板的标签必须**顶格**，且块内不能夹空行。
-            # 否则 CommonMark 会把整段降级成缩进代码块、以源码形式显示（见 ISSUE-010/011）。
+            # 用户代码必须先把换行编码成 &#10; 再塞进模板。
+            # 原因：<div> 是 CommonMark 的 **type-6** HTML 块，**遇空行即终止**；
+            # 代码里的空行一旦把块截断，其后 4 空格缩进的代码行就会被渲染成
+            # **嵌套的缩进代码块**（视觉上在方框里又套一个小代码框）。
+            # 编码后代码区变成单行，markdown 里再无空行，块不会断开；
+            # 浏览器会把实体解码回换行，white-space: pre-wrap 照常显示。
+            # 实测对比（真实 Streamlit + Playwright）：
+            #   div + 原始转义          -> ❌ 嵌套代码块
+            #   div + &#10; 编码        -> ✅ 正常，空行完整保留
+            #   <pre> 承载              -> ❌ 标签被 Streamlit 净化剥掉，进不了 DOM
+            escaped = (
+                html_lib.escape(full_code)
+                .replace("\r\n", "\n")
+                .replace("\r", "\n")
+                .replace("\n", "&#10;")
+            )
+            # 整段模板不能有游离空行（否则同理会截断块，见 ISSUE-010）
             placeholder.markdown(
                 f"""<div style="
     background: {THEME_COLORS['bg_tertiary']};
@@ -54,7 +69,7 @@ def render_streaming_code(
     white-space: pre-wrap;
     max-height: 400px;
     overflow-y: auto;
-">{html_lib.escape(full_code)}</div>
+">{escaped}</div>
 <div style="font-size: 12px; color: #888; margin-top: 0.5rem;">
     📝 生成中... {char_count} 字符 | {speed:.0f} 字符/秒
 </div>""",
