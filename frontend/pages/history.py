@@ -120,7 +120,7 @@ else:
             padding: 2rem;
             color: {THEME_COLORS['text_muted']};
         ">
-            未找到匹配 "{search_query}" 的记录
+            未找到匹配 "{html_lib.escape(search_query)}" 的记录
         </div>
         """, unsafe_allow_html=True)
     else:
