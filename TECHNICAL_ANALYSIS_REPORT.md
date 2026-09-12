@@ -133,9 +133,8 @@ D:\my project\CodeCraft Agent/
 ├── frontend/                         # Streamlit Web界面
 │   ├── app.py                        # 主入口
 │   ├── components/                   # UI组件
-│   │   ├── agent_status.py           # Agent状态可视化
-│   │   ├── code_display.py           # 代码展示组件
-│   │   └── streaming_display.py      # 流式输出组件
+│   │   ├── ui_components.py          # 通用UI组件（Hero/卡片/代码块/流水线等）
+│   │   └── streaming_display.py      # 流式输出组件（render_streaming_code）
 │   ├── pages/                        # 页面
 │   │   ├── chat.py                   # 代码生成页面
 │   │   ├── history.py                # 历史记录页面
@@ -1346,9 +1345,8 @@ class SensitiveInfoFilter(logging.Filter):
 frontend/
 ├── app.py                 # 主页
 ├── components/
-│   ├── agent_status.py    # Agent状态可视化
-│   ├── code_display.py    # 代码展示组件
-│   └── streaming_display.py # 流式输出组件
+│   ├── ui_components.py        # 通用UI组件
+│   └── streaming_display.py    # 流式输出组件
 ├── pages/
 │   ├── chat.py            # 代码生成页面
 │   ├── history.py         # 历史记录页面

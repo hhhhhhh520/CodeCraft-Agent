@@ -1,12 +1,18 @@
 # tests/test_streaming_display_html.py
 """ISSUE-011 回归：流式组件的 HTML 必须渲染成 HTML
 
-修复前 3 处缺陷（均用真实渲染器实测确认）：
-- `render_streaming_code`：闭合代码围栏缩进 16 空格 → 围栏永不闭合，整段进代码块
-- `render_streaming_text`：`{full_text}` 后夹空行 → HTML 块被终止
-- `render_agent_streaming_status`：`+=` 拼接每段以纯空白行结尾 → 产生空行
+被测函数 `render_streaming_code` 修复过 3 个问题中的 2 个（第 3 个是同文件里
+已删除的死代码，见下）：
 
-本文件覆盖前者的**已修复**状态；后两者仍为死代码，未修（见 ISSUE-011）。
+1. 闭合代码围栏缩进 16 空格 → 围栏永不闭合，整段变代码块
+   修法：改用 HTML div 承载，不再用 markdown 围栏
+2. 用户代码里的空行截断 type-6 HTML 块 → 后续缩进行变成嵌套代码块
+   修法：把换行编码成 `&#10;`（详见 `test_no_nested_code_block_from_user_blank_lines`）
+
+同文件原有的 `render_streaming_text` / `StreamingDisplay` /
+`render_agent_streaming_status` 从未被调用，连同 `agent_status.py` /
+`code_display.py` 已于 2026-09-12 删除（见 issues/ISSUE-011）。
+
 `placeholder` 是函数入参，所以直接塞替身即可，不需要 monkeypatch。
 """
 

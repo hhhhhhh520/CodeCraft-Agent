@@ -1,13 +1,9 @@
-# Components package initialization
+"""前端组件包
 
-from .agent_status import render_agent_status, render_review_score
-from .code_display import render_code_with_issues
-from .streaming_display import StreamingDisplay, render_streaming_code
+各模块直接按子模块导入，例如：
+    from frontend.components.ui_components import render_hero_section
+    from frontend.components.streaming_display import render_streaming_code
 
-__all__ = [
-    "render_agent_status",
-    "render_review_score",
-    "render_code_with_issues",
-    "StreamingDisplay",
-    "render_streaming_code",
-]
+（本文件曾导出 agent_status / code_display / StreamingDisplay 等名字，
+但它们从未被任何页面调用，已于 2026-09-12 移除，见 issues/ISSUE-011。）
+"""

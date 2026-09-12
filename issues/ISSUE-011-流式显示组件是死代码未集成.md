@@ -1,11 +1,11 @@
 # 流式显示组件：死代码 + 渲染缺陷（原判"渲染成源码"不成立）
 
-> 创建时间: 2026-09-12 | 状态: 🟡部分解决（2026-09-12）
+> 创建时间: 2026-09-12 | 状态: 🟢已解决（2026-09-12）
 >
 > **两处更正**：
 > ① 原判「用户看到裸 HTML 源码」**不成立**——该模块当时零调用点，渲染成什么样都没人看。
-> ② 处置方式经讨论定为**接入**（而非删除）：`render_streaming_code` 已修好并接进
-> `chat.py`，重复实现消除；**其余部分仍为死代码**，见「当前状态」。
+> ② 处置方式经讨论定为**接入 + 全删**：`render_streaming_code` 修好并接进 `chat.py`
+> 消除重复；其余无处可"接入"的死代码（3 个函数/类 + 2 个整模块）**全部删除**。
 
 ## 问题描述（原始）
 
@@ -87,19 +87,23 @@ full_code = render_streaming_code(
 
 **全量回归**：144 passed（原 139 + 新增 5）。
 
-## 当前状态（未完成部分）
+## 已删除（2026-09-12）
 
-`render_streaming_code` 已脱离死代码。**但下列仍是死代码，且无处可"接入"**：
+`render_streaming_code` 已接入后，剩下的死代码**无处可"接入"**，按删除路线收敛：
 
-| 项目 | 位置 | 为什么无处可并 |
+| 删除项 | 位置 | 为什么无处可并 |
 |---|---|---|
 | `StreamingDisplay` 类 | `streaming_display.py` | chat.py 没有对应的生命周期管理器，属**独有功能** |
-| `render_streaming_text` | `streaming_display.py` | chat.py 只流式渲染代码，无文本流场景。**渲染缺陷未修** |
-| `render_agent_streaming_status` | `streaming_display.py` | chat.py 用的是 `ui_components.render_agent_pipeline`，**粒度不同**。**渲染缺陷未修** |
-| `agent_status.py` 整个模块 | 107 行 | 渲染 7 个*状态*（IDLE→…→DONE），比在用的 `render_agent_pipeline`（4 个 *Agent*）更贴合真实状态机——属**替代实现**而非重复。且用的是 `gray`/`#e8f5e9` 等浅色，写于主题系统上线（`1f0e8df`，2026-05-08）**之前**，直接用会错色 |
-| `code_display.py` 整个模块 | 53 行 | `render_code_display` 与 `chat.py` 的复制按钮块近乎逐字重复，但 chat.py 用的是带样式的 `render_code_block`，组件用的是朴素 `st.code`——接入等于**降级外观** |
+| `render_streaming_text` | `streaming_display.py` | chat.py 只流式渲染代码，无文本流场景 |
+| `render_agent_streaming_status` | `streaming_display.py` | chat.py 用的是 `ui_components.render_agent_pipeline`，**粒度不同** |
+| `agent_status.py` | 整模块 107 行 | 渲染 7 个*状态*，比在用的 `render_agent_pipeline`（4 个 *Agent*）更贴合状态机——属**替代实现**而非重复。且用的是 `gray`/`#e8f5e9` 等浅色，写于主题系统上线（`1f0e8df`，2026-05-08）**之前**，直接用会错色 |
+| `code_display.py` | 整模块 53 行 | `render_code_display` 与 `chat.py` 的复制按钮块近乎逐字重复，但 chat.py 用的是带样式的 `render_code_block`，组件用的是朴素 `st.code`——接入等于**降级外观** |
 
-**待决**：这五项要么删（git 可捞回），要么按各自情况处理。
+顺带把 `frontend/components/__init__.py` 里导出这些无人用名字的语句一并清掉——正是它制造了「这是个在用的模块」的假象。
+
+**这不损失能力**：git 历史里全都在；先例是 2026-09-10 以同样理由删除 Memory/VectorMemory 子系统（见 `PROGRESS.md` 修改历史）。
+
+**注意**：`render_streaming_text` 与 `render_agent_streaming_status` 被删时**其渲染缺陷未修**——删除取代了修复。若将来要从 git 捞回来复用，先补上这两处。
 
 ## 相关文件
 

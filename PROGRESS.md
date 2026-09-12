@@ -1,8 +1,8 @@
 # CodeCraft Agent 项目进度
 
-> 最后更新: 2026-09-11
+> 最后更新: 2026-09-12
 >
-> **当前状态（2026-09-11 实测）**: 118 个测试全部通过（`pytest -q`，约 4 秒）；`backend/` 覆盖率约 **74%**（`pytest --cov=backend`；cli/ 与 frontend/ 无自动化测试，未纳入）。
+> **当前状态（2026-09-12 实测）**: 145 个测试全部通过（`pytest -q`，约 5 秒）；`backend/` 覆盖率约 **74%**（`pytest --cov=backend`）。`cli/` 仍无自动化测试；`frontend/` 自 2026-09-12 起已有页面级测试（`tests/test_frontend_pages.py` 等 4 个文件）。
 
 ---
 
@@ -99,7 +99,7 @@
 - `HIGHLIGHTS.md` - 技术亮点文档
 - `INTERVIEW_GUIDE.md` - 面试话术文档（本地文件，已在 `.gitignore` 中，未纳入版本库）
 - `demos/` - 4个演示脚本 + 运行脚本 + 演示指南（已于 2026-09-10 移除）
-- `frontend/components/streaming_display.py` - 流式显示组件
+- `frontend/components/streaming_display.py` - 流式显示组件（2026-09-12 起只保留 `render_streaming_code`，其余为死代码已删）
 - `frontend/pages/chat.py` - 集成流式输出
 - `backend/core/vector_memory.py` - 向量记忆系统（已于 2026-09-10 移除）
 - `backend/core/memory.py` - 集成向量记忆（已于 2026-09-10 移除）
@@ -268,7 +268,11 @@ codecraft-agent/
     ├── test_security.py        ✅
     ├── test_errors.py          ✅
     ├── test_code_utils.py      ✅
-    └── test_factory.py         ✅ 装配工厂测试（2026-09-10 新增）
+    ├── test_factory.py         ✅ 装配工厂测试（2026-09-10 新增）
+    ├── test_frontend_pages.py  ✅ Streamlit 页面路径测试（2026-09-12 新增）
+    ├── test_ui_components_html.py ✅ UI 组件 HTML 渲染测试（2026-09-12 新增）
+    ├── test_history_page_xss.py ✅ 历史页搜索词转义测试（2026-09-12 新增）
+    └── test_streaming_display_html.py ✅ 流式组件渲染测试（2026-09-12 新增）
 ```
 
 ---
@@ -295,6 +299,18 @@ python -m cli.main version
 ---
 
 ## 修改历史
+
+### 2026-09-12 修复生成链路四项缺陷 + 删除未集成的组件模块
+
+**修改文件**: `frontend/pages/chat.py`、`frontend/utils/session.py`、`frontend/components/ui_components.py`、`frontend/pages/history.py`、`frontend/components/streaming_display.py`、`frontend/components/__init__.py`；`frontend/components/agent_status.py`、`frontend/components/code_display.py`（删除）；新增 `tests/test_frontend_pages.py`、`tests/test_ui_components_html.py`、`tests/test_history_page_xss.py`、`tests/test_streaming_display_html.py`（118 → 145 个测试）
+
+**修改内容**:
+1. **生成功能崩溃**：`frontend/pages/chat.py` 一条路径上连续四层缺陷——`llm` 未定义、`context` 未定义、`GenerationResult` 缺 `test_code` 字段（每次生成成功必现 `AttributeError`）、`add_to_history` 不写 `test_code`（历史页的测试代码区块永不显示）。逐层修完并补 Streamlit 页面级测试
+2. **HTML 被渲染成源码**：模板写成换行缩进 4 空格、块内夹空行时，CommonMark 会终止 HTML 块并把后续缩进行当缩进代码块。`ui_components.py` 新增 `_render_html()` 统一收口 13 处调用
+3. **流式代码嵌套代码块**：用户代码里的空行截断 HTML 块，后续缩进行被渲染成框里套框。改为把换行编码成 `&#10;`
+4. **历史页搜索词未转义**：`history.py` 搜索词直接插入 `unsafe_allow_html=True` 的 HTML，可注入任意标签
+
+**修改原因**: 2026-09-12 八项目真实启动验证发现核心功能开箱即崩、页面大面积显示 HTML 源码；修复过程中补写的测试又抓出后续几层。同轮 AST 全扫发现 `frontend/components/` 下 4 个模块有 3 个零调用点——按删除路线收敛（同 2026-09-10 处理记忆系统的先例），`agent_status.py`、`code_display.py` 及 `streaming_display.py` 中三个无人调用的函数/类一并移除。详见 `issues/ISSUE-009` ~ `ISSUE-012`。
 
 ### 2026-09-11 修复沙箱子进程中文输出的解码错误
 **修改文件**: backend/tools/executor.py、tests/test_executor.py（新增 2 个测试，116 → 118）
