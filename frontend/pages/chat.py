@@ -8,7 +8,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from frontend.styles.theme import apply_global_styles, THEME_COLORS
+from frontend.styles.theme import apply_global_styles
 from frontend.components.ui_components import (
     render_hero_section,
     render_agent_pipeline,
@@ -18,6 +18,7 @@ from frontend.components.ui_components import (
     render_token_usage,
     render_empty_state,
 )
+from frontend.components.streaming_display import render_streaming_code
 from frontend.utils.session import (
     SessionManager,
     ConfigManager,
@@ -133,28 +134,12 @@ if generate_btn and requirement:
         ]
 
         # 流式显示区域
+        # 流式渲染逻辑统一在 frontend/components/streaming_display.py，
+        # 这里不再内联一份（原先两处各写一套，见 ISSUE-011）
         code_placeholder = st.empty()
-        full_code = ""
-
-        import html as html_lib
-
-        for chunk in generator.llm.stream(messages):
-            full_code += chunk
-            # 简化显示，避免频繁更新（转义HTML防止XSS）
-            code_placeholder.markdown(f"""
-            <div style="
-                background: {THEME_COLORS['bg_tertiary']};
-                border: 1px solid {THEME_COLORS['border']};
-                border-radius: 12px;
-                padding: 1rem;
-                font-family: 'JetBrains Mono', monospace;
-                font-size: 0.85rem;
-                color: {THEME_COLORS['text_primary']};
-                white-space: pre-wrap;
-                max-height: 400px;
-                overflow-y: auto;
-            ">{html_lib.escape(full_code)}</div>
-            """, unsafe_allow_html=True)
+        full_code = render_streaming_code(
+            generator.llm.stream(messages), code_placeholder, language="python"
+        )
 
         # 提取代码块
         from backend.utils.code_utils import extract_code_from_response

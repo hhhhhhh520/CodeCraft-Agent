@@ -8,6 +8,8 @@ import streamlit as st
 from typing import Iterator, Optional
 import time
 
+from frontend.styles.theme import THEME_COLORS
+
 
 def render_streaming_code(
     stream: Iterator[str],
@@ -38,16 +40,24 @@ def render_streaming_code(
         if show_progress:
             elapsed = time.time() - start_time
             speed = char_count / elapsed if elapsed > 0 else 0
-            escaped_code = html_lib.escape(full_code)
+            # 注意：本模板的标签必须**顶格**，且块内不能夹空行。
+            # 否则 CommonMark 会把整段降级成缩进代码块、以源码形式显示（见 ISSUE-010/011）。
             placeholder.markdown(
-                f"""
-                ```{language}
-{escaped_code}
-                ```
-                <div style="font-size: 12px; color: #888;">
-                    📝 生成中... {char_count} 字符 | {speed:.0f} 字符/秒
-                </div>
-                """,
+                f"""<div style="
+    background: {THEME_COLORS['bg_tertiary']};
+    border: 1px solid {THEME_COLORS['border']};
+    border-radius: 12px;
+    padding: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: {THEME_COLORS['text_primary']};
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+">{html_lib.escape(full_code)}</div>
+<div style="font-size: 12px; color: #888; margin-top: 0.5rem;">
+    📝 生成中... {char_count} 字符 | {speed:.0f} 字符/秒
+</div>""",
                 unsafe_allow_html=True,
             )
         else:
