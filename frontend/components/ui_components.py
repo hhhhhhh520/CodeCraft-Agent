@@ -7,10 +7,36 @@ from typing import Optional
 import time
 
 
+def _render_html(html: str) -> None:
+    """把整段 HTML 渲染为真实 HTML（ISSUE-010）
+
+    模板写成 `f\"\"\"` 后换行缩进 4 空格的形态，块内若夹了空行，CommonMark 会在空行处
+    终止 HTML 块，其后**仍带缩进**的行就被解析成「缩进代码块」，整段以源码形式显示。
+
+    已用受控实验确认 Streamlit 的真实行为（4 种缩进×空行组合实测）：
+
+    | 缩进 | 空行 | 结果 |
+    |---|---|---|
+    | 4 空格 | 无 | ✅ 正常 HTML（Streamlit 会 lstrip 整个 body）|
+    | 4 空格 | 有 | ❌ 缩进代码块 |
+    | 无 | 无 | ✅ |
+    | 无 | 有 | ✅（空行后的行顶格，各自成新的 HTML 块）|
+
+    即**空行是根因，缩进单独无害**。这里去掉纯空白行保证块不被截断，顺带把首行顶格
+    让行为不依赖 Streamlit 内部的 lstrip。**其余行缩进一律不动**——`<pre>` 里嵌的
+    代码缩进有意义（render_code_block 的内嵌代码行本身零缩进，用 textwrap.dedent
+    反而会因公共前缀为空而失效）。
+    """
+    lines = [line for line in html.split("\n") if line.strip()]
+    if lines:
+        lines[0] = lines[0].lstrip()
+    st.markdown("\n".join(lines), unsafe_allow_html=True)
+
+
 def render_hero_section(title: str, subtitle: str, description: str = ""):
     """渲染Hero区域 - 带动画的主标题区"""
 
-    st.markdown(f"""
+    _render_html(f"""
     <div style="
         text-align: center;
         padding: 3rem 1rem;
@@ -75,7 +101,7 @@ def render_hero_section(title: str, subtitle: str, description: str = ""):
         to {{ transform: rotate(360deg); }}
     }}
     </style>
-    """, unsafe_allow_html=True)
+    """)
 
 
 def render_feature_card(icon: str, title: str, description: str, color: str = None):
@@ -84,7 +110,7 @@ def render_feature_card(icon: str, title: str, description: str, color: str = No
     if color is None:
         color = THEME_COLORS['accent_cyan']
 
-    st.markdown(f"""
+    _render_html(f"""
     <div style="
         background: {THEME_COLORS['bg_tertiary']};
         border: 1px solid {THEME_COLORS['border']};
@@ -129,7 +155,7 @@ def render_feature_card(icon: str, title: str, description: str, color: str = No
             margin: 0;
         ">{description}</p>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
 
 def render_stat_card(value: str, label: str, color: str = None):
@@ -138,7 +164,7 @@ def render_stat_card(value: str, label: str, color: str = None):
     if color is None:
         color = THEME_COLORS['accent_cyan']
 
-    st.markdown(f"""
+    _render_html(f"""
     <div style="
         background: {THEME_COLORS['bg_tertiary']};
         border: 1px solid {THEME_COLORS['border']};
@@ -162,7 +188,7 @@ def render_stat_card(value: str, label: str, color: str = None):
             color: {THEME_COLORS['text_muted']};
         ">{label}</div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
 
 def render_agent_pipeline(current_agent: str = None, completed_agents: list = None):
@@ -250,7 +276,7 @@ def render_agent_pipeline(current_agent: str = None, completed_agents: list = No
 
     html += "</div>"
 
-    st.markdown(html, unsafe_allow_html=True)
+    _render_html(html)
 
 
 def render_code_block(code: str, language: str = "python", title: str = None, show_copy: bool = True):
@@ -309,7 +335,7 @@ def render_code_block(code: str, language: str = "python", title: str = None, sh
     </div>
     """
 
-    st.markdown(html, unsafe_allow_html=True)
+    _render_html(html)
 
 
 def render_score_gauge(score: int, label: str = "代码评分"):
@@ -329,7 +355,7 @@ def render_score_gauge(score: int, label: str = "代码评分"):
     # 计算角度 (0-100 -> 0-180度)
     angle = (score / 100) * 180
 
-    st.markdown(f"""
+    _render_html(f"""
     <div style="
         display: flex;
         flex-direction: column;
@@ -399,14 +425,14 @@ def render_score_gauge(score: int, label: str = "代码评分"):
             color: {color};
         ">{status}</div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
 
 def render_issue_list(issues: list):
     """渲染问题列表"""
 
     if not issues:
-        st.markdown(f"""
+        _render_html(f"""
         <div style="
             display: flex;
             align-items: center;
@@ -420,7 +446,7 @@ def render_issue_list(issues: list):
             <span>✓</span>
             <span>代码审查通过，未发现问题</span>
         </div>
-        """, unsafe_allow_html=True)
+        """)
         return
 
     html = f"""
@@ -470,7 +496,7 @@ def render_issue_list(issues: list):
 
     html += "</div></div>"
 
-    st.markdown(html, unsafe_allow_html=True)
+    _render_html(html)
 
 
 def render_token_usage(used: int, total: int):
@@ -486,7 +512,7 @@ def render_token_usage(used: int, total: int):
     else:
         color = THEME_COLORS['error']
 
-    st.markdown(f"""
+    _render_html(f"""
     <div style="
         background: {THEME_COLORS['bg_tertiary']};
         border: 1px solid {THEME_COLORS['border']};
@@ -525,7 +551,7 @@ def render_token_usage(used: int, total: int):
             color: {THEME_COLORS['text_muted']};
         ">{percentage:.1f}%</div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
 
 def render_history_card(requirement: str, timestamp: str, score: int, index: int):
@@ -545,7 +571,7 @@ def render_history_card(requirement: str, timestamp: str, score: int, index: int
     # 截断需求文本（转义HTML防止XSS）
     display_requirement = html_lib.escape(requirement[:60]) + "..." if len(requirement) > 60 else html_lib.escape(requirement)
 
-    st.markdown(f"""
+    _render_html(f"""
     <div style="
         background: {THEME_COLORS['bg_tertiary']};
         border: 1px solid {THEME_COLORS['border']};
@@ -579,7 +605,7 @@ def render_history_card(requirement: str, timestamp: str, score: int, index: int
             ">{score}</div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
 
 def render_empty_state(icon: str, title: str, description: str, action_text: str = None):
@@ -612,14 +638,14 @@ def render_empty_state(icon: str, title: str, description: str, action_text: str
     </div>
     """
 
-    st.markdown(html, unsafe_allow_html=True)
+    _render_html(html)
 
 
 def render_config_status(is_configured: bool, api_type: str = ""):
     """渲染配置状态"""
 
     if is_configured:
-        st.markdown(f"""
+        _render_html(f"""
         <div style="
             display: flex;
             align-items: center;
@@ -637,9 +663,9 @@ def render_config_status(is_configured: bool, api_type: str = ""):
                 </div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     else:
-        st.markdown(f"""
+        _render_html(f"""
         <div style="
             display: flex;
             align-items: center;
@@ -657,4 +683,4 @@ def render_config_status(is_configured: bool, api_type: str = ""):
                 </div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
