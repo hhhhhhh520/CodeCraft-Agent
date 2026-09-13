@@ -70,14 +70,14 @@ full_code = render_streaming_code(
 
 ## 验证方式
 
-**单测** `tests/test_streaming_display_html.py`（5 用例，`placeholder` 是入参所以直接塞替身，无需 monkeypatch）：
+**单测** `tests/test_streaming_display_html.py`（6 用例，`placeholder` 是入参所以直接塞替身，无需 monkeypatch）：
 
 - 渲染成 HTML 而非代码块（`markdown_it` 判定，须 `.lstrip()`，见 ISSUE-010）
 - **用户代码空行不被吃掉**——断言的是**交给 markdown 的字符串**里的代码行数，不是返回值（只断言返回值的话，空行被剥掉也照样通过，是假测试）
 - 用户代码里的标签被转义
 - 进度行存在 / `show_progress=False` 走 `placeholder.code` 分支
 
-**红绿证**：修复前 `1 failed, 4 passed` → 修复后 `5 passed`。
+**红绿证**：修复前 `3 failed, 3 passed` → 修复后 `6 passed`。
 
 **视觉无回归验证**（浏览器实测，真启动 Streamlit 并排渲染旧内联模板与新组件）：
 
