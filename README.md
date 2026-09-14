@@ -1,15 +1,17 @@
+<div align="center">
+
 # CodeCraft Agent
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Tests](https://img.shields.io/badge/Tests-118%20passed-brightgreen)
-![Coverage](https://img.shields.io/badge/Coverage-74%25%20(backend)-green)
-![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-orange)
+**多 Agent 协作的 Python 代码生成与优化助手** — 生成 → 审查 → 修复 → 测试完整闭环。
 
-> 多Agent协作的Python代码生成与优化助手
-
-基于多Agent协作的Python代码生成与优化助手，实现代码生成 → 审查 → 修复 → 测试的完整闭环。
+[![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://www.python.org)
+[![Tests](https://img.shields.io/badge/Tests-145%20passing-brightgreen)](tests/)
+[![Coverage](https://img.shields.io/badge/Coverage-74%25%20(backend)-green)](tests/)
+[![Architecture](https://img.shields.io/badge/Architecture-Multi--Agent-orange)](docs/assets/architecture.md)
 
 📚 **文档**: [项目亮点](HIGHLIGHTS.md) | [详细架构](docs/assets/architecture.md)
+
+</div>
 
 ## 项目亮点
 
@@ -19,7 +21,7 @@
 | 🔄 反馈闭环 | 审查不通过自动修复，最多3次迭代 |
 | 📊 状态机管理 | 8状态有限状态机，确保任务流转可控 |
 | 🔌 多模型支持 | OpenAI / Claude / DeepSeek 可切换 |
-| ✅ 高测试覆盖 | 118个测试用例 |
+| ✅ 高测试覆盖 | 145个测试用例 |
 
 ## 功能特性
 
@@ -38,7 +40,7 @@
 | LLM API | OpenAI / Claude / DeepSeek（tenacity重试） |
 | CLI框架 | Typer + Rich |
 | Web框架 | Streamlit |
-| 测试框架 | Pytest (118个测试) |
+| 测试框架 | Pytest (145个测试) |
 
 ## 项目结构
 
@@ -87,7 +89,7 @@ CodeCraft Agent/
 
 ```bash
 # 克隆项目
-git clone <repository-url>
+git clone https://github.com/hhhhhhh520/CodeCraft-Agent.git
 cd "CodeCraft Agent"
 
 # 安装依赖
@@ -241,7 +243,7 @@ stateDiagram-v2
 ### 运行测试
 
 ```bash
-# 运行所有测试（118 个）
+# 运行所有测试（145 个）
 pytest tests/ -v
 
 # 带覆盖率（backend 约 74%；cli/ 与 frontend/ 目前无自动化测试，未纳入统计）
